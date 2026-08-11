@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MHIdle.Data;
 using MHIdle.Systems;
 using UnityEngine;
@@ -18,17 +19,23 @@ namespace MHIdle.UI
             Bag
         }
 
+        const float IconSm = 22f;
+        const float IconMd = 36f;
+        const float IconLg = 48f;
+
         Tab _tab = Tab.Hunt;
         Vector2 _scroll;
         GUIStyle _titleStyle;
         GUIStyle _boxStyle;
         GUIStyle _labelStyle;
+        GUIStyle _smallStyle;
         bool _stylesReady;
 
         void OnGUI()
         {
             if (IdleGameManager.Instance == null) return;
 
+            IconLibrary.EnsureLoaded();
             EnsureStyles();
             DrawBackground();
 
@@ -72,6 +79,9 @@ namespace MHIdle.UI
                 GUILayout.Label($"提示：{manager.StatusMessage}", _labelStyle);
             }
 
+            GUILayout.Space(4f);
+            GUILayout.Label("Icons by Lorc / Delapouite · game-icons.net (CC BY 3.0)", _smallStyle);
+
             GUILayout.EndArea();
         }
 
@@ -100,14 +110,25 @@ namespace MHIdle.UI
             var weaponProgress = progress.GetEquippedWeaponProgress();
 
             GUILayout.BeginVertical(_boxStyle);
+
+            GUILayout.BeginHorizontal();
+            DrawCurrencyChip(progress.Zenny);
+            GUILayout.Space(12f);
             GUILayout.Label($"猎人等级 HR{progress.HunterRank}   经验 {progress.HunterRankExp}/{progress.ExpToNextRank}", _labelStyle);
-            GUILayout.Label($"金币 {progress.Zenny}z   讨伐数 {progress.TotalKills}", _labelStyle);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            IconLibrary.DrawIcon(IconLibrary.GetWeapon(weapon.Type), IconMd, new Color(0.95f, 0.85f, 0.45f));
+            GUILayout.BeginVertical();
             GUILayout.Label(
-                $"武器 {weapon.Name}（{IdleCombatSystem.ToWeaponTypeName(weapon.Type)}）  熟练度 Lv.{weaponProgress.ProficiencyLevel}  ({weaponProgress.ProficiencyExp}/{weaponProgress.ExpToNext})",
+                $"{weapon.Name}（{IdleCombatSystem.ToWeaponTypeName(weapon.Type)}）  熟练度 Lv.{weaponProgress.ProficiencyLevel}  ({weaponProgress.ProficiencyExp}/{weaponProgress.ExpToNext})",
                 _labelStyle);
             GUILayout.Label(
-                $"攻击 {progress.GetPlayerAttack():0.0}   防御 {progress.GetTotalDefense():0.0}   攻速间隔 {progress.GetAttackInterval():0.00}s",
+                $"攻击 {progress.GetPlayerAttack():0.0}   防御 {progress.GetTotalDefense():0.0}   攻速间隔 {progress.GetAttackInterval():0.00}s   讨伐 {progress.TotalKills}",
                 _labelStyle);
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+
             GUILayout.EndVertical();
 
             GUILayout.Space(8f);
@@ -117,6 +138,22 @@ namespace MHIdle.UI
             DrawBar("猎人 HP", combat.PlayerHp, progress.GetPlayerMaxHp(), new Color(0.35f, 0.75f, 0.45f));
             DrawBar("怪物 HP", combat.MonsterHp, monster.MaxHp, new Color(0.85f, 0.35f, 0.3f));
             GUILayout.Label(combat.LastRewardSummary, _labelStyle);
+
+            if (monster.Drops != null && monster.Drops.Count > 0)
+            {
+                GUILayout.Space(4f);
+                GUILayout.Label("可能掉落", _smallStyle);
+                GUILayout.BeginHorizontal();
+                foreach (var drop in monster.Drops)
+                {
+                    DrawMaterialChip(drop.Material, $"{drop.MinAmount}-{drop.MaxAmount}");
+                    GUILayout.Space(6f);
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+            }
+
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(combat.IsRunning ? "暂停挂机" : "继续挂机", GUILayout.Height(34f)))
             {
@@ -137,10 +174,21 @@ namespace MHIdle.UI
             {
                 var m = GameDatabase.Monsters[i];
                 string mark = i == progress.CurrentMonsterIndex ? "▶ " : "   ";
-                if (GUILayout.Button($"{mark}{m.Name}  HR需求≈{m.Rank}  HP {m.MaxHp:0}  奖励 {m.ZennyReward}z", GUILayout.Height(28f)))
+                GUILayout.BeginHorizontal(_boxStyle);
+                if (m.Drops.Count > 0)
+                {
+                    IconLibrary.DrawIcon(
+                        IconLibrary.GetMaterial(m.Drops[0].Material),
+                        IconSm,
+                        IconLibrary.MaterialTint(m.Drops[0].Material));
+                }
+
+                if (GUILayout.Button($"{mark}{m.Name}  HR≈{m.Rank}  HP {m.MaxHp:0}  奖励 {m.ZennyReward}z", GUILayout.Height(28f)))
                 {
                     manager.SelectMonster(i);
                 }
+
+                GUILayout.EndHorizontal();
             }
 
             GUILayout.Space(8f);
@@ -161,9 +209,16 @@ namespace MHIdle.UI
             {
                 var wp = progress.Weapons[weapon.Id];
                 GUILayout.BeginVertical(_boxStyle);
+
+                GUILayout.BeginHorizontal();
+                IconLibrary.DrawIcon(IconLibrary.GetWeapon(weapon.Type), IconLg, new Color(0.95f, 0.85f, 0.45f));
+                GUILayout.BeginVertical();
                 GUILayout.Label($"{weapon.Name}  T{weapon.Tier}  伤害 {weapon.BaseDamage}  间隔 {weapon.AttackInterval:0.00}s", _labelStyle);
                 GUILayout.Label($"解锁 HR{weapon.UnlockHunterRank}  |  {(wp.Owned ? $"已拥有 · 熟练度 Lv.{wp.ProficiencyLevel}" : "未拥有")}", _labelStyle);
-                GUILayout.Label($"锻造：{weapon.CraftZenny}z  {FormatCost(weapon.CraftCost)}", _labelStyle);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+
+                DrawCostRow(weapon.CraftZenny, weapon.CraftCost);
 
                 GUILayout.BeginHorizontal();
                 GUI.enabled = !wp.Owned;
@@ -190,9 +245,16 @@ namespace MHIdle.UI
                 bool equipped = progress.GetEquippedArmorId(armor.Slot) == armor.Id;
 
                 GUILayout.BeginVertical(_boxStyle);
-                GUILayout.Label($"{armor.Name}  ({armor.Slot})  防御 +{armor.Defense:0}  生命 +{armor.HpBonus:0}", _labelStyle);
+
+                GUILayout.BeginHorizontal();
+                IconLibrary.DrawIcon(IconLibrary.GetArmor(armor.Slot), IconMd, new Color(0.7f, 0.82f, 0.95f));
+                GUILayout.BeginVertical();
+                GUILayout.Label($"{armor.Name}  ({ToSlotName(armor.Slot)})  防御 +{armor.Defense:0}  生命 +{armor.HpBonus:0}", _labelStyle);
                 GUILayout.Label($"解锁 HR{armor.UnlockHunterRank}  |  {(owned ? (equipped ? "装备中" : "已拥有") : "未拥有")}", _labelStyle);
-                GUILayout.Label($"锻造：{armor.CraftZenny}z  {FormatCost(armor.CraftCost)}", _labelStyle);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
+
+                DrawCostRow(armor.CraftZenny, armor.CraftCost);
 
                 GUILayout.BeginHorizontal();
                 GUI.enabled = !owned;
@@ -213,13 +275,73 @@ namespace MHIdle.UI
         void DrawBag(Model.HunterProgress progress)
         {
             GUILayout.BeginVertical(_boxStyle);
-            GUILayout.Label($"金币：{progress.Zenny}z", _labelStyle);
+            GUILayout.BeginHorizontal();
+            DrawCurrencyChip(progress.Zenny, large: true);
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUILayout.Space(10f);
+
             foreach (MaterialId id in Enum.GetValues(typeof(MaterialId)))
             {
-                GUILayout.Label($"{IdleCombatSystem.ToMaterialName(id)}：{progress.GetMaterial(id)}", _labelStyle);
+                GUILayout.BeginHorizontal();
+                IconLibrary.DrawIcon(IconLibrary.GetMaterial(id), IconLg, IconLibrary.MaterialTint(id));
+                GUILayout.BeginVertical();
+                GUILayout.Label(IdleCombatSystem.ToMaterialName(id), _labelStyle);
+                GUILayout.Label($"持有 x{progress.GetMaterial(id)}", _smallStyle);
+                GUILayout.EndVertical();
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.Space(6f);
             }
 
             GUILayout.EndVertical();
+        }
+
+        void DrawCostRow(int zenny, Dictionary<MaterialId, int> cost)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("锻造：", _smallStyle);
+            if (zenny <= 0 && (cost == null || cost.Count == 0))
+            {
+                GUILayout.Label("免费", _smallStyle);
+            }
+            else
+            {
+                if (zenny > 0)
+                {
+                    DrawCurrencyChip(zenny, compact: true);
+                    GUILayout.Space(8f);
+                }
+
+                if (cost != null)
+                {
+                    foreach (var pair in cost)
+                    {
+                        DrawMaterialChip(pair.Key, $"x{pair.Value}");
+                        GUILayout.Space(6f);
+                    }
+                }
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawCurrencyChip(int amount, bool large = false, bool compact = false)
+        {
+            float size = large ? IconMd : IconSm;
+            GUILayout.BeginHorizontal(GUILayout.Height(size));
+            IconLibrary.DrawIcon(IconLibrary.GetCurrency(), size, new Color(1f, 0.85f, 0.35f));
+            GUILayout.Label(compact ? $"{amount}z" : $"金币 {amount}z", large ? _labelStyle : _smallStyle);
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawMaterialChip(MaterialId id, string amountText)
+        {
+            GUILayout.BeginHorizontal(GUILayout.Height(IconSm));
+            IconLibrary.DrawIcon(IconLibrary.GetMaterial(id), IconSm, IconLibrary.MaterialTint(id));
+            GUILayout.Label($"{IdleCombatSystem.ToMaterialName(id)} {amountText}", _smallStyle);
+            GUILayout.EndHorizontal();
         }
 
         void DrawBar(string label, float current, float max, Color color)
@@ -240,16 +362,17 @@ namespace MHIdle.UI
             GUI.color = old;
         }
 
-        static string FormatCost(System.Collections.Generic.Dictionary<MaterialId, int> cost)
+        static string ToSlotName(ArmorSlot slot)
         {
-            if (cost == null || cost.Count == 0) return "免费";
-            var parts = new System.Collections.Generic.List<string>();
-            foreach (var pair in cost)
+            switch (slot)
             {
-                parts.Add($"{IdleCombatSystem.ToMaterialName(pair.Key)}x{pair.Value}");
+                case ArmorSlot.Head: return "头";
+                case ArmorSlot.Chest: return "胸";
+                case ArmorSlot.Arms: return "腕";
+                case ArmorSlot.Waist: return "腰";
+                case ArmorSlot.Legs: return "腿";
+                default: return slot.ToString();
             }
-
-            return string.Join("，", parts);
         }
 
         void DrawBackground()
@@ -272,6 +395,13 @@ namespace MHIdle.UI
                 fontSize = 14,
                 wordWrap = true,
                 normal = { textColor = new Color(0.9f, 0.9f, 0.88f) }
+            };
+            _smallStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                wordWrap = false,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = new Color(0.82f, 0.82f, 0.8f) }
             };
             _boxStyle = new GUIStyle(GUI.skin.box)
             {
