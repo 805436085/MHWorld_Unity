@@ -29,6 +29,7 @@ namespace MHIdle.Data
         public int UnlockHunterRank;
         public int CraftZenny;
         public Dictionary<MaterialId, int> CraftCost = new Dictionary<MaterialId, int>();
+        public List<SkillPointGrant> SkillPoints = new List<SkillPointGrant>();
     }
 
     [Serializable]
@@ -244,29 +245,137 @@ namespace MHIdle.Data
         static List<ArmorDef> BuildArmors()
         {
             var list = new List<ArmorDef>();
-            AddArmorSet(list, "leather", "皮革", 1, 1, 4f, 12f, 0, null);
+
+            // 皮革：体力流入门（4×3=12 → 体力UP小）
+            AddArmorSet(list, "leather", "皮革", 1, 1, 4f, 12f, 0, null,
+                PerSlot(
+                    Skill(SkillId.Health, 3),
+                    Skill(SkillId.Health, 3),
+                    Skill(SkillId.Health, 3),
+                    Skill(SkillId.Health, 3)));
+
+            // 骨制：攻击入门（4×3=12 → 攻击UP小）
             AddArmorSet(list, "bone", "骨制", 2, 2, 8f, 24f, 600,
                 new Dictionary<MaterialId, int>
                 {
                     { MaterialId.MonsterBone, 4 },
                     { MaterialId.MonsterHide, 2 }
-                });
-            AddArmorSet(list, "jagras", "大贼龙", 3, 3, 14f, 40f, 1800,
+                },
+                PerSlot(
+                    Skill(SkillId.Attack, 3),
+                    Skill(SkillId.Attack, 3),
+                    Skill(SkillId.Attack, 2),
+                    Skill(SkillId.Attack, 3)));
+
+            // 怪鸟：道具/回复流
+            AddArmorSet(list, "kutku", "怪鸟", 3, 3, 12f, 36f, 1600,
                 new Dictionary<MaterialId, int>
                 {
-                    { MaterialId.MonsterBone, 6 },
-                    { MaterialId.MonsterHide, 5 },
+                    { MaterialId.MonsterBone, 5 },
+                    { MaterialId.MonsterHide, 6 },
                     { MaterialId.SharpClaw, 2 }
-                });
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.ItemUse, 3), Skill(SkillId.RecSpeed, 1)),
+                    Skills(Skill(SkillId.ItemUse, 3), Skill(SkillId.RecSpeed, 1)),
+                    Skills(Skill(SkillId.ItemUse, 2), Skill(SkillId.RecSpeed, 2)),
+                    Skills(Skill(SkillId.ItemUse, 3), Skill(SkillId.RecSpeed, 2))));
+
+            // 毒怪鸟：麻痹 + 陷阱
+            AddArmorSet(list, "gypceros", "毒怪鸟", 3, 4, 16f, 40f, 2400,
+                new Dictionary<MaterialId, int>
+                {
+                    { MaterialId.MonsterHide, 8 },
+                    { MaterialId.SharpClaw, 4 }
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.Paralysis, 3), Skill(SkillId.TrapMaster, 1)),
+                    Skills(Skill(SkillId.Paralysis, 3), Skill(SkillId.TrapMaster, 2)),
+                    Skills(Skill(SkillId.Paralysis, 2), Skill(SkillId.TrapMaster, 3)),
+                    Skills(Skill(SkillId.Paralysis, 2), Skill(SkillId.TrapMaster, 3))));
+
+            // 岩龙：防守
+            AddArmorSet(list, "basarios", "岩龙", 4, 5, 22f, 50f, 4200,
+                new Dictionary<MaterialId, int>
+                {
+                    { MaterialId.MonsterBone, 10 },
+                    { MaterialId.WyvernGem, 1 }
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.Defense, 3), Skill(SkillId.Guard, 2)),
+                    Skills(Skill(SkillId.Defense, 3), Skill(SkillId.Guard, 2)),
+                    Skills(Skill(SkillId.Defense, 2), Skill(SkillId.Guard, 3)),
+                    Skills(Skill(SkillId.Defense, 3), Skill(SkillId.Guard, 2))));
+
+            // 雌火龙：毒 + 状态（异常压制）
+            AddArmorSet(list, "rathian", "雌火龙", 4, 6, 20f, 55f, 6500,
+                new Dictionary<MaterialId, int>
+                {
+                    { MaterialId.SharpClaw, 5 },
+                    { MaterialId.MonsterHide, 8 },
+                    { MaterialId.WyvernGem, 1 }
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.Poison, 3), Skill(SkillId.StatusAtk, 2)),
+                    Skills(Skill(SkillId.Poison, 3), Skill(SkillId.StatusAtk, 2)),
+                    Skills(Skill(SkillId.Poison, 2), Skill(SkillId.StatusAtk, 3)),
+                    Skills(Skill(SkillId.Poison, 2), Skill(SkillId.StatusAtk, 3))));
+
+            // 火龙：攻击 + 达人（会心输出）
             AddArmorSet(list, "rathalos", "火龙", 4, 6, 24f, 70f, 7000,
                 new Dictionary<MaterialId, int>
                 {
                     { MaterialId.SharpClaw, 6 },
                     { MaterialId.WyvernGem, 1 },
                     { MaterialId.MonsterHide, 8 }
-                });
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.Attack, 3), Skill(SkillId.Expert, 2)),
+                    Skills(Skill(SkillId.Attack, 2), Skill(SkillId.Expert, 3)),
+                    Skills(Skill(SkillId.Attack, 2), Skill(SkillId.Expert, 3)),
+                    Skills(Skill(SkillId.Attack, 3), Skill(SkillId.Expert, 2))));
+
+            // 眠鸟气质：睡眠暴力一刀（睡眠 + 攻击）
+            AddArmorSet(list, "hypnoc", "眠鸟", 4, 5, 18f, 48f, 5000,
+                new Dictionary<MaterialId, int>
+                {
+                    { MaterialId.MonsterHide, 10 },
+                    { MaterialId.SharpClaw, 4 },
+                    { MaterialId.MonsterBone, 6 }
+                },
+                PerSlot(
+                    Skills(Skill(SkillId.Sleep, 3), Skill(SkillId.Attack, 1)),
+                    Skills(Skill(SkillId.Sleep, 3), Skill(SkillId.Attack, 2)),
+                    Skills(Skill(SkillId.Sleep, 2), Skill(SkillId.Attack, 2)),
+                    Skills(Skill(SkillId.Sleep, 3), Skill(SkillId.Attack, 1))));
+
             return list;
         }
+
+        static SkillPointGrant Skill(SkillId id, int points) => new SkillPointGrant(id, points);
+
+        static List<SkillPointGrant> Skills(params SkillPointGrant[] grants) =>
+            new List<SkillPointGrant>(grants);
+
+        static List<SkillPointGrant>[] PerSlot(
+            List<SkillPointGrant> head,
+            List<SkillPointGrant> chest,
+            List<SkillPointGrant> arms,
+            List<SkillPointGrant> legs) =>
+            new[] { head, chest, arms, legs };
+
+        static List<SkillPointGrant>[] PerSlot(
+            SkillPointGrant head,
+            SkillPointGrant chest,
+            SkillPointGrant arms,
+            SkillPointGrant legs) =>
+            new[]
+            {
+                new List<SkillPointGrant> { head },
+                new List<SkillPointGrant> { chest },
+                new List<SkillPointGrant> { arms },
+                new List<SkillPointGrant> { legs }
+            };
 
         static void AddArmorSet(
             List<ArmorDef> list,
@@ -277,7 +386,8 @@ namespace MHIdle.Data
             float defense,
             float hpBonus,
             int zenny,
-            Dictionary<MaterialId, int> cost)
+            Dictionary<MaterialId, int> cost,
+            List<SkillPointGrant>[] slotSkills = null)
         {
             var slots = new[]
             {
@@ -291,6 +401,10 @@ namespace MHIdle.Data
                     ? new Dictionary<MaterialId, int>()
                     : new Dictionary<MaterialId, int>(cost);
 
+                var skills = slotSkills != null && i < slotSkills.Length
+                    ? new List<SkillPointGrant>(slotSkills[i])
+                    : new List<SkillPointGrant>();
+
                 list.Add(new ArmorDef
                 {
                     Id = $"{idPrefix}_{slots[i].ToString().ToLowerInvariant()}",
@@ -301,7 +415,8 @@ namespace MHIdle.Data
                     HpBonus = hpBonus,
                     UnlockHunterRank = unlockRank,
                     CraftZenny = zenny,
-                    CraftCost = copiedCost
+                    CraftCost = copiedCost,
+                    SkillPoints = skills
                 });
             }
         }

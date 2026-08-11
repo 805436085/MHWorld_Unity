@@ -144,6 +144,31 @@ namespace MHIdle.UI
             }
 
             GUILayout.EndHorizontal();
+
+            // Build 技能面板
+            GUILayout.Space(6f);
+            var skillFx = progress.GetSkillEffects();
+            GUILayout.Label(ArmorSkillSystem.DescribeBuildFocus(skillFx), _headerStyle);
+            var board = ArmorSkillSystem.GetSkillBoard(progress);
+            if (board.Count == 0)
+            {
+                GUILayout.Label("当前防具无技能点", _smallStyle);
+            }
+            else
+            {
+                foreach (var info in board)
+                {
+                    string active = info.Tier != null
+                        ? $"→ {info.Tier.ActiveName}"
+                        : (info.NextThreshold > 0 ? $"（差 {info.NextThreshold - info.Points} 点激活）" : string.Empty);
+                    GUILayout.Label($"{ArmorSkillDatabase.SkillName(info.Skill)} {info.Points}  {active}", _labelStyle);
+                    if (info.Tier != null)
+                    {
+                        GUILayout.Label(info.Tier.Description, _smallStyle);
+                    }
+                }
+            }
+
             GUILayout.EndVertical();
 
             GUILayout.Space(6f);
@@ -414,7 +439,20 @@ namespace MHIdle.UI
                 GUILayout.BeginVertical(_boxStyle);
                 GUILayout.BeginHorizontal();
                 IconLibrary.DrawIcon(IconLibrary.GetArmor(armor.Slot), IconMd, new Color(0.7f, 0.82f, 0.95f));
+                GUILayout.BeginVertical();
                 GUILayout.Label($"{armor.Name}  防+{armor.Defense:0}  血+{armor.HpBonus:0}", _labelStyle);
+                if (armor.SkillPoints != null && armor.SkillPoints.Count > 0)
+                {
+                    var parts = new List<string>();
+                    foreach (var g in armor.SkillPoints)
+                    {
+                        parts.Add($"{ArmorSkillDatabase.SkillName(g.Skill)}+{g.Points}");
+                    }
+
+                    GUILayout.Label(string.Join("  ", parts), _smallStyle);
+                }
+
+                GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
                 DrawCostRow(armor.CraftZenny, armor.CraftCost);
                 GUILayout.BeginHorizontal();
