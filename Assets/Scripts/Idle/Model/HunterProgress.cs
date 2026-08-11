@@ -67,6 +67,24 @@ namespace MHIdle.Model
             if (EquippedArmor == null) EquippedArmor = new Dictionary<string, string>();
             if (OwnedArmor == null) OwnedArmor = new HashSet<string>();
 
+            // 移除已废弃的腰甲槽位与无效防具记录（兼容旧存档）
+            EquippedArmor.Remove("Waist");
+            OwnedArmor.RemoveWhere(id => id.EndsWith("_waist", StringComparison.OrdinalIgnoreCase));
+            OwnedArmor.RemoveWhere(id => GameDatabase.GetArmor(id) == null);
+            foreach (var key in new List<string>(EquippedArmor.Keys))
+            {
+                if (!Enum.TryParse<ArmorSlot>(key, out _))
+                {
+                    EquippedArmor.Remove(key);
+                    continue;
+                }
+
+                if (GameDatabase.GetArmor(EquippedArmor[key]) == null)
+                {
+                    EquippedArmor.Remove(key);
+                }
+            }
+
             foreach (var weapon in GameDatabase.Weapons)
             {
                 if (!Weapons.ContainsKey(weapon.Id))

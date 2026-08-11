@@ -12,7 +12,6 @@ namespace MHIdle.Data
         Head,
         Chest,
         Arms,
-        Waist,
         Legs
     }
 

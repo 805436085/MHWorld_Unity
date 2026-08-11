@@ -22,7 +22,6 @@
 | `armor_head.png` | 头盔 | Lorc | https://game-icons.net/1x1/lorc/visored-helm.html |
 | `armor_chest.png` | 铠甲 | Delapouite | https://game-icons.net/1x1/delapouite/leather-armor.html |
 | `armor_arms.png` | 腕甲 | Lorc | https://game-icons.net/1x1/lorc/mailed-fist.html |
-| `armor_waist.png` | 腰甲 | Lorc | https://game-icons.net/1x1/lorc/robe.html |
 | `armor_legs.png` | 护腿 | Delapouite | https://game-icons.net/1x1/delapouite/leg-armor.html |
 
 ## 注意

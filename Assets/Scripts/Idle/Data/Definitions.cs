@@ -234,9 +234,9 @@ namespace MHIdle.Data
         {
             var slots = new[]
             {
-                ArmorSlot.Head, ArmorSlot.Chest, ArmorSlot.Arms, ArmorSlot.Waist, ArmorSlot.Legs
+                ArmorSlot.Head, ArmorSlot.Chest, ArmorSlot.Arms, ArmorSlot.Legs
             };
-            var slotNames = new[] { "头盔", "铠甲", "腕甲", "腰甲", "护腿" };
+            var slotNames = new[] { "头盔", "铠甲", "腕甲", "护腿" };
 
             for (int i = 0; i < slots.Length; i++)
             {

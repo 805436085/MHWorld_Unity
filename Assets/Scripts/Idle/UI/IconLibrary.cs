@@ -29,7 +29,6 @@ namespace MHIdle.UI
             Load("armor_head");
             Load("armor_chest");
             Load("armor_arms");
-            Load("armor_waist");
             Load("armor_legs");
         }
 
@@ -68,7 +67,6 @@ namespace MHIdle.UI
                 case ArmorSlot.Head: return Get("armor_head");
                 case ArmorSlot.Chest: return Get("armor_chest");
                 case ArmorSlot.Arms: return Get("armor_arms");
-                case ArmorSlot.Waist: return Get("armor_waist");
                 case ArmorSlot.Legs: return Get("armor_legs");
                 default: return null;
             }
