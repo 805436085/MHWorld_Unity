@@ -301,7 +301,7 @@ namespace MHIdle.Data
             int rank,
             float hp,
             float atk,
-            float def,
+            float defense,
             int zenny,
             int hrExp,
             int profExp,
@@ -315,7 +315,7 @@ namespace MHIdle.Data
                 Rank = rank,
                 MaxHp = hp,
                 Attack = atk,
-                Defense = def,
+                Defense = defense,
                 ZennyReward = zenny,
                 HunterRankExp = hrExp,
                 WeaponProficiencyExp = profExp
