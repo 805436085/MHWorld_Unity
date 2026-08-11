@@ -144,20 +144,55 @@ namespace MHIdle.UI
             }
 
             GUILayout.EndHorizontal();
+
+            // Build 技能面板
+            GUILayout.Space(6f);
+            var skillFx = progress.GetSkillEffects();
+            GUILayout.Label(ArmorSkillSystem.DescribeBuildFocus(skillFx), _headerStyle);
+            var board = ArmorSkillSystem.GetSkillBoard(progress);
+            if (board.Count == 0)
+            {
+                GUILayout.Label("当前防具无技能点", _smallStyle);
+            }
+            else
+            {
+                foreach (var info in board)
+                {
+                    string active = info.Tier != null
+                        ? $"→ {info.Tier.ActiveName}"
+                        : (info.NextThreshold > 0 ? $"（差 {info.NextThreshold - info.Points} 点激活）" : string.Empty);
+                    GUILayout.Label($"{ArmorSkillDatabase.SkillName(info.Skill)} {info.Points}  {active}", _labelStyle);
+                    if (info.Tier != null)
+                    {
+                        GUILayout.Label(info.Tier.Description, _smallStyle);
+                    }
+                }
+            }
+
             GUILayout.EndVertical();
 
             GUILayout.Space(6f);
             GUILayout.BeginVertical(_boxStyle);
-            GUILayout.Label($"出征背包（{progress.LoadoutTypeCount}/{HunterProgress.MaxLoadoutSlots}）", _headerStyle);
+            GUILayout.Label($"出征背包（{progress.LoadoutTypeCount}/{HunterProgress.MaxLoadoutSlots} 种）", _headerStyle);
+            GUILayout.Label("最多 10 种道具；战斗中会自动使用回复/陷阱/炸弹。", _smallStyle);
             if (progress.Loadout.Count == 0)
             {
-                GUILayout.Label("空 · 可从仓库装配道具（原型阶段占位）", _smallStyle);
+                GUILayout.Label("空 · 去「仓库」页从库存装入", _smallStyle);
             }
             else
             {
-                foreach (var pair in progress.Loadout)
+                foreach (ItemId id in Enum.GetValues(typeof(ItemId)))
                 {
-                    GUILayout.Label($"{pair.Key} x{pair.Value}", _smallStyle);
+                    int count = progress.GetLoadoutCount(id);
+                    if (count <= 0) continue;
+                    var def = ItemDatabase.Get(id);
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label($"{def.Name} ×{count}  [{CategoryName(def.Category)}]", _labelStyle);
+                    if (GUILayout.Button("卸1", GUILayout.Width(48f), GUILayout.Height(24f)))
+                        manager.UnpackItem(id);
+                    if (GUILayout.Button("全卸", GUILayout.Width(48f), GUILayout.Height(24f)))
+                        manager.UnpackItem(id, count);
+                    GUILayout.EndHorizontal();
                 }
             }
 
@@ -345,9 +380,12 @@ namespace MHIdle.UI
         // ——— 第 3 页：仓库 ———
         void DrawWarehousePage(HunterProgress progress)
         {
+            var manager = IdleGameManager.Instance;
+
             GUILayout.BeginVertical(_boxStyle);
             DrawCurrencyChip(progress.Zenny, large: true);
             GUILayout.Space(8f);
+            GUILayout.Label("素材", _headerStyle);
             foreach (MaterialId id in Enum.GetValues(typeof(MaterialId)))
             {
                 GUILayout.BeginHorizontal();
@@ -362,6 +400,28 @@ namespace MHIdle.UI
             }
 
             GUILayout.EndVertical();
+
+            GUILayout.Space(8f);
+            GUILayout.Label("道具库存 → 出征背包", _headerStyle);
+            GUILayout.Label($"出征栏占用 {progress.LoadoutTypeCount}/{HunterProgress.MaxLoadoutSlots}", _smallStyle);
+            foreach (var def in ItemDatabase.All)
+            {
+                int stock = progress.GetItem(def.Id);
+                int packed = progress.GetLoadoutCount(def.Id);
+                GUILayout.BeginVertical(_boxStyle);
+                GUILayout.Label($"{def.Name}  [{CategoryName(def.Category)}]  仓库 {stock}  背包 {packed}/{def.MaxStack}", _labelStyle);
+                GUILayout.Label(def.Description, _smallStyle);
+                GUILayout.BeginHorizontal();
+                GUI.enabled = stock > 0;
+                if (GUILayout.Button("装入1", GUILayout.Height(26f))) manager.PackItem(def.Id);
+                if (GUILayout.Button("装入5", GUILayout.Height(26f))) manager.PackItem(def.Id, 5);
+                GUI.enabled = packed > 0;
+                if (GUILayout.Button("卸下1", GUILayout.Height(26f))) manager.UnpackItem(def.Id);
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+                GUILayout.Space(3f);
+            }
 
             GUILayout.Space(8f);
             GUILayout.Label("已拥有武器", _headerStyle);
@@ -380,6 +440,31 @@ namespace MHIdle.UI
         // ——— 第 4 页：制造 ———
         void DrawForgePage(IdleGameManager manager, HunterProgress progress)
         {
+            GUILayout.Label("道具店 / 制造", _headerStyle);
+            foreach (var def in ItemDatabase.All)
+            {
+                GUILayout.BeginVertical(_boxStyle);
+                GUILayout.Label($"{def.Name}  [{CategoryName(def.Category)}]  库存 {progress.GetItem(def.Id)}", _labelStyle);
+                GUILayout.Label($"{def.Description}  堆叠上限 {def.MaxStack}  解锁 HR{def.UnlockHunterRank}", _smallStyle);
+                GUILayout.Label($"商店价 {def.ShopPrice}z", _smallStyle);
+                if (def.CraftCost != null && def.CraftCost.Count > 0)
+                {
+                    DrawCostRow(def.CraftZenny, def.CraftCost);
+                }
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("购买1", GUILayout.Height(26f))) manager.BuyItem(def.Id);
+                if (GUILayout.Button("购买5", GUILayout.Height(26f))) manager.BuyItem(def.Id, 5);
+                GUI.enabled = def.CraftCost != null && def.CraftCost.Count > 0;
+                if (GUILayout.Button("制造1", GUILayout.Height(26f))) manager.CraftItem(def.Id);
+                GUI.enabled = true;
+                if (GUILayout.Button("装入背包", GUILayout.Height(26f))) manager.PackItem(def.Id);
+                GUILayout.EndHorizontal();
+                GUILayout.EndVertical();
+                GUILayout.Space(3f);
+            }
+
+            GUILayout.Space(10f);
             GUILayout.Label("武器工房", _headerStyle);
             foreach (var weapon in GameDatabase.Weapons)
             {
@@ -414,7 +499,20 @@ namespace MHIdle.UI
                 GUILayout.BeginVertical(_boxStyle);
                 GUILayout.BeginHorizontal();
                 IconLibrary.DrawIcon(IconLibrary.GetArmor(armor.Slot), IconMd, new Color(0.7f, 0.82f, 0.95f));
+                GUILayout.BeginVertical();
                 GUILayout.Label($"{armor.Name}  防+{armor.Defense:0}  血+{armor.HpBonus:0}", _labelStyle);
+                if (armor.SkillPoints != null && armor.SkillPoints.Count > 0)
+                {
+                    var parts = new List<string>();
+                    foreach (var g in armor.SkillPoints)
+                    {
+                        parts.Add($"{ArmorSkillDatabase.SkillName(g.Skill)}+{g.Points}");
+                    }
+
+                    GUILayout.Label(string.Join("  ", parts), _smallStyle);
+                }
+
+                GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
                 DrawCostRow(armor.CraftZenny, armor.CraftCost);
                 GUILayout.BeginHorizontal();
@@ -453,6 +551,20 @@ namespace MHIdle.UI
             DrawBar("猎人 HP", combat.PlayerHp, progress.GetPlayerMaxHp(), new Color(0.35f, 0.75f, 0.45f));
             DrawBar("怪物 HP", combat.MonsterHp, m.MaxHp, new Color(0.85f, 0.35f, 0.3f));
             GUILayout.Label(combat.LastRewardSummary, _smallStyle);
+            if (combat.ItemState != null)
+            {
+                string buff = string.Empty;
+                if (combat.ItemState.AttackBuffMul > 1.01f) buff += " 鬼人";
+                if (combat.ItemState.DefenseBuffMul > 1.01f) buff += " 硬化";
+                if (combat.ItemState.ImmobilizeTimer > 0f) buff += $" 定身{combat.ItemState.ImmobilizeTimer:0.0}s";
+                if (combat.ItemState.FlashTimer > 0f) buff += " 闪光虚弱";
+                if (!string.IsNullOrEmpty(buff))
+                    GUILayout.Label("状态：" + buff.Trim(), _smallStyle);
+                if (!string.IsNullOrEmpty(combat.ItemState.LastItemLog))
+                    GUILayout.Label(combat.ItemState.LastItemLog, _smallStyle);
+            }
+
+            GUILayout.Label($"携带：{CombatItemController.SummarizeLoadout(progress)}", _smallStyle);
 
             GUILayout.Space(4f);
             GUILayout.BeginVertical(_boxStyle);
@@ -505,6 +617,19 @@ namespace MHIdle.UI
             }
 
             GUI.Label(new Rect(rect.x + 4, rect.y + rect.height - 16, rect.width, 16), WeaponTaxonomy.MapName(mapId), _smallStyle);
+        }
+
+        static string CategoryName(ItemCategory category)
+        {
+            switch (category)
+            {
+                case ItemCategory.Heal: return "回复";
+                case ItemCategory.Buff: return "增益";
+                case ItemCategory.Trap: return "陷阱";
+                case ItemCategory.Tool: return "道具";
+                case ItemCategory.Bomb: return "炸弹";
+                default: return category.ToString();
+            }
         }
 
         void DrawCostRow(int zenny, Dictionary<MaterialId, int> cost)

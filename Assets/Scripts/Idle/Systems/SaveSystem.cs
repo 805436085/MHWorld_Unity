@@ -27,6 +27,7 @@ namespace MHIdle.Systems
         public List<MapEntry> Maps = new List<MapEntry>();
         public List<string> UnlockedTechniques = new List<string>();
         public List<MaterialEntry> Loadout = new List<MaterialEntry>();
+        public List<MaterialEntry> ItemInventory = new List<MaterialEntry>();
     }
 
     [Serializable]
@@ -136,6 +137,9 @@ namespace MHIdle.Systems
             foreach (var pair in progress.Loadout)
                 data.Loadout.Add(new MaterialEntry { Id = pair.Key, Amount = pair.Value });
 
+            foreach (var pair in progress.ItemInventory)
+                data.ItemInventory.Add(new MaterialEntry { Id = pair.Key, Amount = pair.Value });
+
             PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
             PlayerPrefs.Save();
         }
@@ -221,6 +225,11 @@ namespace MHIdle.Systems
                 if (data.Loadout != null)
                 {
                     foreach (var entry in data.Loadout) progress.Loadout[entry.Id] = entry.Amount;
+                }
+
+                if (data.ItemInventory != null)
+                {
+                    foreach (var entry in data.ItemInventory) progress.ItemInventory[entry.Id] = entry.Amount;
                 }
 
                 progress.EnsureDefaults();
