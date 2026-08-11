@@ -369,7 +369,6 @@ namespace MHIdle.UI
                 case ArmorSlot.Head: return "头";
                 case ArmorSlot.Chest: return "胸";
                 case ArmorSlot.Arms: return "腕";
-                case ArmorSlot.Waist: return "腰";
                 case ArmorSlot.Legs: return "腿";
                 default: return slot.ToString();
             }
