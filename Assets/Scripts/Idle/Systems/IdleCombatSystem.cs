@@ -29,11 +29,14 @@ namespace MHIdle.Systems
         public bool IsCombatPopupOpen { get; private set; }
         public string LastRewardSummary { get; private set; } = "准备狩猎";
         public IReadOnlyList<CombatLogEntry> Logs => _logs;
+        public CombatItemState ItemState { get; private set; } = new CombatItemState();
 
         readonly List<CombatLogEntry> _logs = new List<CombatLogEntry>();
+        readonly List<string> _itemLogBuffer = new List<string>();
         float _playerAttackTimer;
         float _monsterAttackTimer;
         float _saveTimer;
+        float _itemTickTimer;
         System.Random _rng = new System.Random();
 
         const float MonsterAttackInterval = 2.2f;
@@ -50,6 +53,7 @@ namespace MHIdle.Systems
             IsCombatPopupOpen = false;
             BindMonster(Progress.CurrentMonsterIndex);
             RefreshPlayerVitals(true);
+            CombatItemController.OnHuntStart(Progress, ItemState, Mode);
             AddLog($"日常挂机开始：{CurrentMonster.Name}");
         }
 
@@ -71,6 +75,7 @@ namespace MHIdle.Systems
             BindMonster(index);
             RefreshPlayerVitals(true);
             IsRunning = true;
+            CombatItemController.OnHuntStart(Progress, ItemState, Mode);
             AddLog($"挂机中：{CurrentMonster.Name}");
         }
 
@@ -87,8 +92,10 @@ namespace MHIdle.Systems
             BindMonster(monsterIndex);
             RefreshPlayerVitals(true);
             IsRunning = true;
+            CombatItemController.OnHuntStart(Progress, ItemState, Mode);
             float win = HuntSystem.EstimateWinRate(Progress, monster);
             AddLog($"出击 {monster.Name}！{HuntSystem.FormatWinRate(win)}");
+            if (!string.IsNullOrEmpty(ItemState.LastItemLog)) AddLog(ItemState.LastItemLog);
         }
 
         public void SelectMonster(int index)
@@ -121,6 +128,27 @@ namespace MHIdle.Systems
             _playerAttackTimer += deltaTime;
             _monsterAttackTimer += deltaTime;
             _saveTimer += deltaTime;
+            _itemTickTimer += deltaTime;
+
+            if (_itemTickTimer >= 0.25f)
+            {
+                _itemTickTimer = 0f;
+                float hp = PlayerHp;
+                float mhp = MonsterHp;
+                _itemLogBuffer.Clear();
+                CombatItemController.TickAutoUse(
+                    Progress, ItemState, Mode,
+                    ref hp, Progress.GetPlayerMaxHp(),
+                    ref mhp, CurrentMonster, _rng, _itemLogBuffer);
+                PlayerHp = hp;
+                MonsterHp = mhp;
+                foreach (var line in _itemLogBuffer) AddLog(line);
+                if (MonsterHp <= 0f)
+                {
+                    OnMonsterDefeated();
+                    return;
+                }
+            }
 
             float playerInterval = Progress.GetAttackInterval();
             if (_playerAttackTimer >= playerInterval)
@@ -129,7 +157,8 @@ namespace MHIdle.Systems
                 PlayerAttack();
             }
 
-            if (MonsterHp > 0f && _monsterAttackTimer >= MonsterAttackInterval)
+            bool monsterCanAct = ItemState.ImmobilizeTimer <= 0f;
+            if (monsterCanAct && MonsterHp > 0f && _monsterAttackTimer >= MonsterAttackInterval)
             {
                 _monsterAttackTimer -= MonsterAttackInterval;
                 MonsterAttack();
@@ -149,7 +178,7 @@ namespace MHIdle.Systems
             if (MonsterHp <= 0f) return;
 
             var skills = Progress.GetSkillEffects();
-            float raw = Progress.GetPlayerAttack();
+            float raw = Progress.GetPlayerAttack() * ItemState.AttackBuffMul;
 
             // 会心
             bool crit = _rng.NextDouble() < skills.CritChance;
@@ -217,8 +246,9 @@ namespace MHIdle.Systems
             if (PlayerHp <= 0f) return;
 
             var skills = Progress.GetSkillEffects();
-            float damage = Mathf.Max(1f, CurrentMonster.Attack - Progress.GetTotalDefense() * 0.35f);
+            float damage = Mathf.Max(1f, CurrentMonster.Attack - Progress.GetTotalDefense() * ItemState.DefenseBuffMul * 0.35f);
             damage *= skills.IncomingDamageMul;
+            if (ItemState.FlashTimer > 0f) damage *= ItemState.FlashIncomingMul;
 
             if (Mode == CombatMode.ActiveHunt)
             {
@@ -284,10 +314,30 @@ namespace MHIdle.Systems
 
             foreach (var drop in CurrentMonster.Drops)
             {
-                if (_rng.NextDouble() > drop.Chance) continue;
+                float chance = CombatItemController.ApplyDropBonus(ItemState, drop.Chance);
+                if (_rng.NextDouble() > chance) continue;
                 int amount = _rng.Next(drop.MinAmount, drop.MaxAmount + 1);
+                // 麻醉球：本场消耗 1 换掉落加成
+                if (ItemState.TranqBonusUses > 0 && Mode == CombatMode.ActiveHunt)
+                {
+                    if (ItemSystem.ConsumeFromLoadout(Progress, ItemId.TranqBomb))
+                    {
+                        ItemState.TranqBonusUses--;
+                        amount += 1;
+                    }
+                    else ItemState.TranqBonusUses = 0;
+                }
+
                 Progress.AddMaterial(drop.Material, amount);
                 rewardBuilder.Append($"，{ToMaterialName(drop.Material)} x{amount}");
+            }
+
+            int mapBonus = CombatItemController.MapExpBonus(ItemState);
+            if (mapBonus > 0)
+            {
+                Progress.GetMapProgress(CurrentMonster.MapId).Ring.AddExp(mapBonus);
+                rewardBuilder.Append("，地图熟练+");
+                rewardBuilder.Append(mapBonus);
             }
 
             var wp = Progress.GetEquippedWeaponProgress();

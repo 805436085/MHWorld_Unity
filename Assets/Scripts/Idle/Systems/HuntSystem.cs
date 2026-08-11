@@ -18,6 +18,13 @@ namespace MHIdle.Systems
             float def = progress.GetTotalDefense();
             float hp = progress.GetPlayerMaxHp();
 
+            // 预估携带增益药
+            if (progress.GetLoadoutCount(ItemId.Demondrug) > 0) atk *= 1.12f;
+            if (progress.GetLoadoutCount(ItemId.Armorskin) > 0) def *= 1.15f;
+            if (progress.GetLoadoutCount(ItemId.PitfallTrap) > 0 || progress.GetLoadoutCount(ItemId.ShockTrap) > 0)
+                atk *= 1.06f;
+            if (progress.GetLoadoutCount(ItemId.BarrelBomb) > 0) atk *= 1.04f;
+
             float playerDps = atk / Mathf.Max(0.55f, progress.GetAttackInterval());
             float monsterDps = Mathf.Max(1f, monster.Attack - def * 0.35f) / 2.2f;
 

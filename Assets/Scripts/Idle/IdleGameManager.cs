@@ -128,6 +128,42 @@ namespace MHIdle
             StatusMessage = "已返回营地";
         }
 
+        public void BuyItem(Data.ItemId id, int amount = 1)
+        {
+            var result = ItemSystem.Buy(Progress, id, amount);
+            StatusMessage = result == ItemActionResult.Success
+                ? $"购入 {Data.ItemDatabase.Get(id).Name} x{amount}"
+                : ItemSystem.Describe(result);
+            if (result == ItemActionResult.Success) SaveSystem.Save(Progress);
+        }
+
+        public void CraftItem(Data.ItemId id, int amount = 1)
+        {
+            var result = ItemSystem.Craft(Progress, id, amount);
+            StatusMessage = result == ItemActionResult.Success
+                ? $"制造 {Data.ItemDatabase.Get(id).Name} x{amount}"
+                : ItemSystem.Describe(result);
+            if (result == ItemActionResult.Success) SaveSystem.Save(Progress);
+        }
+
+        public void PackItem(Data.ItemId id, int amount = 1)
+        {
+            var result = ItemSystem.PackToLoadout(Progress, id, amount);
+            StatusMessage = result == ItemActionResult.Success
+                ? $"装入出征背包：{Data.ItemDatabase.Get(id).Name} x{amount}"
+                : ItemSystem.Describe(result);
+            if (result == ItemActionResult.Success) SaveSystem.Save(Progress);
+        }
+
+        public void UnpackItem(Data.ItemId id, int amount = 1)
+        {
+            var result = ItemSystem.UnpackFromLoadout(Progress, id, amount);
+            StatusMessage = result == ItemActionResult.Success
+                ? $"卸下到仓库：{Data.ItemDatabase.Get(id).Name} x{amount}"
+                : ItemSystem.Describe(result);
+            if (result == ItemActionResult.Success) SaveSystem.Save(Progress);
+        }
+
         void OnApplicationQuit()
         {
             if (Progress != null) SaveSystem.Save(Progress);

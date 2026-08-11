@@ -39,6 +39,9 @@ namespace MHIdle.Model
         /// <summary>出征携带栏（道具 id → 数量），最多 10 种。</summary>
         public Dictionary<string, int> Loadout = new Dictionary<string, int>();
 
+        /// <summary>仓库道具库存（非出征）。</summary>
+        public Dictionary<string, int> ItemInventory = new Dictionary<string, int>();
+
         public int ExpToNextRank => 40 + HunterRank * 25;
 
         public static HunterProgress CreateNew()
@@ -59,6 +62,13 @@ namespace MHIdle.Model
             if (Maps == null) Maps = new Dictionary<string, MapProgress>();
             if (UnlockedTechniques == null) UnlockedTechniques = new HashSet<string>();
             if (Loadout == null) Loadout = new Dictionary<string, int>();
+            if (ItemInventory == null) ItemInventory = new Dictionary<string, int>();
+
+            // 新手赠送基础药品
+            if (GetItem(ItemId.Potion) == 0 && GetLoadoutCount(ItemId.Potion) == 0 && TotalKills == 0)
+            {
+                AddItem(ItemId.Potion, 5);
+            }
 
             EquippedArmor.Remove("Waist");
             OwnedArmor.RemoveWhere(id => id.EndsWith("_waist", StringComparison.OrdinalIgnoreCase));
@@ -286,11 +296,44 @@ namespace MHIdle.Model
 
         public int LoadoutTypeCount => Loadout.Count;
 
+        public int GetItem(ItemId id)
+        {
+            string key = id.ToString();
+            return ItemInventory.TryGetValue(key, out int v) ? v : 0;
+        }
+
+        public void AddItem(ItemId id, int amount)
+        {
+            if (amount == 0) return;
+            string key = id.ToString();
+            int next = GetItem(id) + amount;
+            if (next <= 0) ItemInventory.Remove(key);
+            else ItemInventory[key] = next;
+        }
+
+        public int GetLoadoutCount(ItemId id)
+        {
+            string key = id.ToString();
+            return Loadout.TryGetValue(key, out int v) ? v : 0;
+        }
+
+        public void AddLoadout(ItemId id, int amount)
+        {
+            if (amount == 0) return;
+            string key = id.ToString();
+            int next = GetLoadoutCount(id) + amount;
+            if (next <= 0) Loadout.Remove(key);
+            else Loadout[key] = next;
+        }
+
         public bool TryAddToLoadout(string itemId, int amount = 1)
         {
             if (string.IsNullOrEmpty(itemId) || amount <= 0) return false;
+            if (!Enum.TryParse(itemId, out ItemId id)) return false;
             if (!Loadout.ContainsKey(itemId) && Loadout.Count >= MaxLoadoutSlots) return false;
-            Loadout[itemId] = (Loadout.TryGetValue(itemId, out int cur) ? cur : 0) + amount;
+            var def = ItemDatabase.Get(id);
+            if (def != null && GetLoadoutCount(id) + amount > def.MaxStack) return false;
+            AddLoadout(id, amount);
             return true;
         }
     }
