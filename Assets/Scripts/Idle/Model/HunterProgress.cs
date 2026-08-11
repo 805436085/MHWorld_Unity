@@ -6,38 +6,10 @@ using UnityEngine;
 namespace MHIdle.Model
 {
     [Serializable]
-    public class WeaponProgress
-    {
-        public string WeaponId;
-        public int ProficiencyLevel = 1;
-        public int ProficiencyExp;
-        public bool Owned;
-
-        public int ExpToNext => 20 + ProficiencyLevel * 15;
-
-        public bool AddExp(int amount)
-        {
-            if (amount <= 0) return false;
-
-            ProficiencyExp += amount;
-            bool leveled = false;
-            while (ProficiencyExp >= ExpToNext)
-            {
-                ProficiencyExp -= ExpToNext;
-                ProficiencyLevel++;
-                leveled = true;
-            }
-
-            return leveled;
-        }
-
-        public float DamageMultiplier => 1f + (ProficiencyLevel - 1) * 0.04f;
-        public float SpeedMultiplier => 1f + (ProficiencyLevel - 1) * 0.015f;
-    }
-
-    [Serializable]
     public class HunterProgress
     {
+        public const int MaxLoadoutSlots = 10;
+
         public int HunterRank = 1;
         public int HunterRankExp;
         public int Zenny = 120;
@@ -45,11 +17,26 @@ namespace MHIdle.Model
         public int CurrentMonsterIndex;
         public int HighestMonsterIndexUnlocked;
         public int TotalKills;
+        public int TotalLargeKills;
+        public int HuntDeaths;
         public long LastSaveUnix;
+
         public Dictionary<string, int> Materials = new Dictionary<string, int>();
         public Dictionary<string, WeaponProgress> Weapons = new Dictionary<string, WeaponProgress>();
         public Dictionary<string, string> EquippedArmor = new Dictionary<string, string>();
         public HashSet<string> OwnedArmor = new HashSet<string>();
+
+        /// <summary>内圈：武器种熟练度 key = WeaponType.ToString()</summary>
+        public Dictionary<string, RingProgress> TypeRings = new Dictionary<string, RingProgress>();
+
+        /// <summary>内内圈：风格组 key = WeaponStyleGroup.ToString()</summary>
+        public Dictionary<string, RingProgress> StyleRings = new Dictionary<string, RingProgress>();
+
+        public Dictionary<string, MapProgress> Maps = new Dictionary<string, MapProgress>();
+        public HashSet<string> UnlockedTechniques = new HashSet<string>();
+
+        /// <summary>出征携带栏（道具 id → 数量），最多 10 种。</summary>
+        public Dictionary<string, int> Loadout = new Dictionary<string, int>();
 
         public int ExpToNextRank => 40 + HunterRank * 25;
 
@@ -66,22 +53,41 @@ namespace MHIdle.Model
             if (Weapons == null) Weapons = new Dictionary<string, WeaponProgress>();
             if (EquippedArmor == null) EquippedArmor = new Dictionary<string, string>();
             if (OwnedArmor == null) OwnedArmor = new HashSet<string>();
+            if (TypeRings == null) TypeRings = new Dictionary<string, RingProgress>();
+            if (StyleRings == null) StyleRings = new Dictionary<string, RingProgress>();
+            if (Maps == null) Maps = new Dictionary<string, MapProgress>();
+            if (UnlockedTechniques == null) UnlockedTechniques = new HashSet<string>();
+            if (Loadout == null) Loadout = new Dictionary<string, int>();
 
-            // 移除已废弃的腰甲槽位与无效防具记录（兼容旧存档）
             EquippedArmor.Remove("Waist");
             OwnedArmor.RemoveWhere(id => id.EndsWith("_waist", StringComparison.OrdinalIgnoreCase));
             OwnedArmor.RemoveWhere(id => GameDatabase.GetArmor(id) == null);
             foreach (var key in new List<string>(EquippedArmor.Keys))
             {
-                if (!Enum.TryParse<ArmorSlot>(key, out _))
+                if (!Enum.TryParse<ArmorSlot>(key, out _) || GameDatabase.GetArmor(EquippedArmor[key]) == null)
                 {
                     EquippedArmor.Remove(key);
-                    continue;
                 }
+            }
 
-                if (GameDatabase.GetArmor(EquippedArmor[key]) == null)
+            foreach (WeaponType type in Enum.GetValues(typeof(WeaponType)))
+            {
+                string key = type.ToString();
+                if (!TypeRings.ContainsKey(key)) TypeRings[key] = new RingProgress();
+            }
+
+            foreach (WeaponStyleGroup group in Enum.GetValues(typeof(WeaponStyleGroup)))
+            {
+                string key = group.ToString();
+                if (!StyleRings.ContainsKey(key)) StyleRings[key] = new RingProgress();
+            }
+
+            foreach (MapId mapId in Enum.GetValues(typeof(MapId)))
+            {
+                string key = mapId.ToString();
+                if (!Maps.ContainsKey(key))
                 {
-                    EquippedArmor.Remove(key);
+                    Maps[key] = new MapProgress { MapId = key };
                 }
             }
 
@@ -93,8 +99,15 @@ namespace MHIdle.Model
                     {
                         WeaponId = weapon.Id,
                         Owned = weapon.Id == "gs_buster",
-                        ProficiencyLevel = 1,
-                        ProficiencyExp = 0
+                        Outer = new RingProgress()
+                    };
+                }
+                else if (Weapons[weapon.Id].Outer == null)
+                {
+                    Weapons[weapon.Id].Outer = new RingProgress
+                    {
+                        Level = Mathf.Max(1, Weapons[weapon.Id].ProficiencyLevel),
+                        Exp = Mathf.Max(0, Weapons[weapon.Id].ProficiencyExp)
                     };
                 }
             }
@@ -106,7 +119,6 @@ namespace MHIdle.Model
 
             Weapons[EquippedWeaponId].Owned = true;
 
-            // 默认皮革套
             foreach (ArmorSlot slot in Enum.GetValues(typeof(ArmorSlot)))
             {
                 string leatherId = $"leather_{slot.ToString().ToLowerInvariant()}";
@@ -119,13 +131,30 @@ namespace MHIdle.Model
         }
 
         public WeaponDef GetWeaponDef(string id) => GameDatabase.GetWeapon(id);
-
         public WeaponDef GetEquippedWeapon() => GameDatabase.GetWeapon(EquippedWeaponId);
 
         public WeaponProgress GetEquippedWeaponProgress()
         {
             EnsureDefaults();
             return Weapons[EquippedWeaponId];
+        }
+
+        public RingProgress GetTypeRing(WeaponType type)
+        {
+            EnsureDefaults();
+            return TypeRings[type.ToString()];
+        }
+
+        public RingProgress GetStyleRing(WeaponStyleGroup group)
+        {
+            EnsureDefaults();
+            return StyleRings[group.ToString()];
+        }
+
+        public MapProgress GetMapProgress(MapId mapId)
+        {
+            EnsureDefaults();
+            return Maps[mapId.ToString()];
         }
 
         public int GetMaterial(MaterialId id)
@@ -137,15 +166,13 @@ namespace MHIdle.Model
         public void AddMaterial(MaterialId id, int amount)
         {
             if (amount <= 0) return;
-            string key = id.ToString();
-            Materials[key] = GetMaterial(id) + amount;
+            Materials[id.ToString()] = GetMaterial(id) + amount;
         }
 
         public bool SpendMaterial(MaterialId id, int amount)
         {
             if (GetMaterial(id) < amount) return false;
-            string key = id.ToString();
-            Materials[key] = GetMaterial(id) - amount;
+            Materials[id.ToString()] = GetMaterial(id) - amount;
             return true;
         }
 
@@ -153,7 +180,6 @@ namespace MHIdle.Model
         {
             if (Zenny < zenny) return false;
             if (cost == null) return true;
-
             foreach (var pair in cost)
             {
                 if (GetMaterial(pair.Key) < pair.Value) return false;
@@ -167,12 +193,7 @@ namespace MHIdle.Model
             if (!CanAfford(zenny, cost)) return false;
             Zenny -= zenny;
             if (cost == null) return true;
-
-            foreach (var pair in cost)
-            {
-                SpendMaterial(pair.Key, pair.Value);
-            }
-
+            foreach (var pair in cost) SpendMaterial(pair.Key, pair.Value);
             return true;
         }
 
@@ -196,6 +217,8 @@ namespace MHIdle.Model
                 if (armor != null) total += armor.Defense;
             }
 
+            var style = GetStyleRing(WeaponTaxonomy.GetStyleGroup(GetEquippedWeapon().Type));
+            total += (style.Level - 1) * 0.6f;
             return total;
         }
 
@@ -218,7 +241,13 @@ namespace MHIdle.Model
             var weapon = GetEquippedWeapon();
             var progress = GetEquippedWeaponProgress();
             if (weapon == null) return 10f;
-            return weapon.BaseDamage * progress.DamageMultiplier + (HunterRank - 1) * 1.5f;
+
+            float typeBonus = 1f + (GetTypeRing(weapon.Type).Level - 1) * 0.015f;
+            float styleBonus = 1f + (GetStyleRing(WeaponTaxonomy.GetStyleGroup(weapon.Type)).Level - 1) * 0.01f;
+            float techBonus = 1f + ProficiencySystem.GetTechniqueDamageBonus(this, weapon.Type);
+
+            return weapon.BaseDamage * progress.DamageMultiplier * typeBonus * styleBonus * techBonus
+                   + (HunterRank - 1) * 1.5f;
         }
 
         public float GetAttackInterval()
@@ -229,11 +258,30 @@ namespace MHIdle.Model
             return Mathf.Max(0.55f, weapon.AttackInterval / progress.SpeedMultiplier);
         }
 
+        public float GetChargeChance()
+        {
+            var weapon = GetEquippedWeapon();
+            if (weapon == null || weapon.Type != WeaponType.GreatSword) return 0f;
+            float chance = 0.12f + ProficiencySystem.GetTechniqueChargeBonus(this, weapon.Type);
+            if (UnlockedTechniques.Contains(TechniqueId.GsCharge3.ToString())) chance += 0.06f;
+            return Mathf.Clamp01(chance);
+        }
+
         public bool OwnsArmor(string armorId) => OwnedArmor.Contains(armorId);
 
         public string GetEquippedArmorId(ArmorSlot slot)
         {
             return EquippedArmor.TryGetValue(slot.ToString(), out string id) ? id : null;
+        }
+
+        public int LoadoutTypeCount => Loadout.Count;
+
+        public bool TryAddToLoadout(string itemId, int amount = 1)
+        {
+            if (string.IsNullOrEmpty(itemId) || amount <= 0) return false;
+            if (!Loadout.ContainsKey(itemId) && Loadout.Count >= MaxLoadoutSlots) return false;
+            Loadout[itemId] = (Loadout.TryGetValue(itemId, out int cur) ? cur : 0) + amount;
+            return true;
         }
     }
 }
