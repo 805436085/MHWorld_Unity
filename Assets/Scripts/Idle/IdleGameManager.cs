@@ -107,6 +107,27 @@ namespace MHIdle
             StatusMessage = "进度已重置";
         }
 
+        public void StartIdleFarm()
+        {
+            Combat.StartIdle();
+            StatusMessage = "开始日常挂机";
+        }
+
+        public void StartActiveHunt(int monsterIndex)
+        {
+            var monster = Data.GameDatabase.GetMonsterByIndex(monsterIndex);
+            if (monster == null) return;
+            float rate = HuntSystem.EstimateWinRate(Progress, monster);
+            Combat.StartActiveHunt(monsterIndex);
+            StatusMessage = $"出击 {monster.Name} · {HuntSystem.FormatWinRate(rate)}";
+        }
+
+        public void CloseCombatPopup()
+        {
+            Combat.CloseCombatPopup();
+            StatusMessage = "已返回营地";
+        }
+
         void OnApplicationQuit()
         {
             if (Progress != null) SaveSystem.Save(Progress);

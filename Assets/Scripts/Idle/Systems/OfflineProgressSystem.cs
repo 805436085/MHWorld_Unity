@@ -1,13 +1,14 @@
 using System;
 using MHIdle.Data;
 using MHIdle.Model;
+using UnityEngine;
 
 namespace MHIdle.Systems
 {
     public static class OfflineProgressSystem
     {
-        const int MaxOfflineSeconds = 8 * 60 * 60; // 最多结算 8 小时
-        const float Efficiency = 0.55f; // 离线效率低于在线
+        const int MaxOfflineSeconds = 8 * 60 * 60;
+        const float Efficiency = 0.55f;
 
         public static string Apply(HunterProgress progress)
         {
@@ -18,7 +19,16 @@ namespace MHIdle.Systems
             if (elapsed < 30) return string.Empty;
 
             int seconds = (int)Math.Min(elapsed, MaxOfflineSeconds);
-            var monster = GameDatabase.GetMonsterByIndex(progress.CurrentMonsterIndex);
+
+            // 离线只结算小怪挂机
+            MonsterDef monster = null;
+            for (int i = 0; i <= progress.HighestMonsterIndexUnlocked && i < GameDatabase.Monsters.Count; i++)
+            {
+                if (GameDatabase.Monsters[i].Size == MonsterSize.Small)
+                    monster = GameDatabase.Monsters[i];
+            }
+
+            if (monster == null) monster = GameDatabase.GetMonsterByIndex(0);
             if (monster == null) return string.Empty;
 
             float attack = progress.GetPlayerAttack();
@@ -29,7 +39,6 @@ namespace MHIdle.Systems
             int kills = (int)(seconds / timePerKill * Efficiency);
             if (kills <= 0) return string.Empty;
 
-            // 离线奖励略收敛，避免一夜暴富
             kills = Math.Min(kills, 120);
             int zenny = monster.ZennyReward * kills;
             int hrExp = Math.Max(1, monster.HunterRankExp * kills / 2);
@@ -38,15 +47,26 @@ namespace MHIdle.Systems
             progress.Zenny += zenny;
             progress.TotalKills += kills;
             progress.AddHunterRankExp(hrExp);
-            progress.GetEquippedWeaponProgress().AddExp(profExp);
 
-            // 给一点保底素材
+            // 分批灌熟练度，避免一次性跳过瓶颈逻辑异常
+            int batches = Math.Max(1, kills / 5);
+            int perBatch = Math.Max(1, profExp / batches);
+            for (int i = 0; i < batches; i++)
+            {
+                ProficiencySystem.GrantCombatExp(
+                    progress,
+                    progress.GetEquippedWeapon(),
+                    perBatch,
+                    MonsterSize.Small,
+                    monster.MapId);
+            }
+
             progress.AddMaterial(MaterialId.MonsterBone, Math.Max(1, kills / 4));
             progress.AddMaterial(MaterialId.MonsterHide, Math.Max(1, kills / 5));
 
             int hours = seconds / 3600;
             int minutes = (seconds % 3600) / 60;
-            return $"离线 {hours}小时{minutes}分：模拟讨伐 {kills} 次，获得 {zenny}z";
+            return $"离线 {hours}小时{minutes}分：挂机小怪 {kills} 次，获得 {zenny}z";
         }
     }
 }

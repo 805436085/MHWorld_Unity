@@ -1,21 +1,25 @@
 # MHWorld_Unity
 
-怪物猎人主题的 Unity 挂机原型。
+怪物猎人 2G 气质的 Unity 挂机原型：日常挂机 + 主动出击 + 三圈熟练度。
 
 ## 试玩
 
-1. Unity **2022.3.19f1** 打开工程  
+1. Unity **2022.3** 打开工程  
 2. 打开 `Assets/Scenes/SampleScene.unity`  
-3. 点击 **Play**（会自动启动挂机 UI）
+3. 点击 **Play**
 
-## 当前内容
+## 当前结构
 
-- 挂机战斗 / 猎人等级 / 大剑熟练度  
-- 武器与防具工房  
-- 离线结算与本地存档  
-- 道具 / 装备 icon（背包、工房、狩猎页）
+| 页 | 内容 |
+|----|------|
+| 角色 | 装备、出征背包、挂机小怪、出击大怪（含胜率） |
+| 熟练度 | 外圈/内圈/内内圈同心圆 + 招式 + 地图熟练 |
+| 仓库 | 素材与已拥有武器 |
+| 制造 | 武器/防具工房 |
+| 战斗弹窗 | 主动讨伐独立窗口 |
+
+详见 `游戏设计.md`。
 
 ## Icon 授权
 
-道具图标来自 [game-icons.net](https://game-icons.net/)（CC BY 3.0）。  
-详见 `Assets/Art/Icons/ATTRIBUTION.md`。
+[game-icons.net](https://game-icons.net/)（CC BY 3.0）— `Assets/Art/Icons/ATTRIBUTION.md`

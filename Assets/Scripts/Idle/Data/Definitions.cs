@@ -46,6 +46,8 @@ namespace MHIdle.Data
         public string Id;
         public string Name;
         public string Locale;
+        public MapId MapId;
+        public MonsterSize Size;
         public int Rank;
         public float MaxHp;
         public float Attack;
@@ -190,6 +192,51 @@ namespace MHIdle.Data
                         { MaterialId.ElderDragonBlood, 4 },
                         { MaterialId.SharpClaw, 20 }
                     }
+                },
+                new WeaponDef
+                {
+                    Id = "ls_iron",
+                    Name = "铁刀",
+                    Type = WeaponType.LongSword,
+                    Tier = 1,
+                    BaseDamage = 22f,
+                    AttackInterval = 1.15f,
+                    UnlockHunterRank = 1,
+                    CraftZenny = 200
+                },
+                new WeaponDef
+                {
+                    Id = "ls_rathalos",
+                    Name = "火龙太刀",
+                    Type = WeaponType.LongSword,
+                    Tier = 4,
+                    BaseDamage = 78f,
+                    AttackInterval = 1.05f,
+                    UnlockHunterRank = 6,
+                    CraftZenny = 8500,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.SharpClaw, 12 },
+                        { MaterialId.WyvernGem, 2 },
+                        { MaterialId.MonsterHide, 14 }
+                    }
+                },
+                new WeaponDef
+                {
+                    Id = "ls_rathian",
+                    Name = "雌火龙太刀",
+                    Type = WeaponType.LongSword,
+                    Tier = 4,
+                    BaseDamage = 72f,
+                    AttackInterval = 1.08f,
+                    UnlockHunterRank = 6,
+                    CraftZenny = 7800,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.SharpClaw, 10 },
+                        { MaterialId.WyvernGem, 2 },
+                        { MaterialId.MonsterHide, 12 }
+                    }
                 }
             };
         }
@@ -261,35 +308,40 @@ namespace MHIdle.Data
 
         static List<MonsterDef> BuildMonsters()
         {
+            // 前半：日常挂机小怪；后半：主动出击大型怪（2G 气质）
             return new List<MonsterDef>
             {
-                MakeMonster("jagras", "大贼龙", "古代树森林", 1, 120, 8, 2, 40, 8, 12,
+                MakeMonster("kelbi", "凯欧比", MapId.ForestAndHills, MonsterSize.Small, 1, 55, 4, 0, 12, 3, 6,
+                    (MaterialId.MonsterHide, 1, 2, 0.9f)),
+                MakeMonster("bullfango", "野猪", MapId.ForestAndHills, MonsterSize.Small, 1, 70, 6, 1, 18, 4, 8,
+                    (MaterialId.MonsterBone, 1, 2, 1f),
+                    (MaterialId.MonsterHide, 1, 1, 0.7f)),
+                MakeMonster("velociprey", "蓝速龙", MapId.Jungle, MonsterSize.Small, 2, 90, 8, 2, 25, 5, 10,
                     (MaterialId.MonsterBone, 1, 3, 1f),
-                    (MaterialId.MonsterHide, 1, 2, 0.8f)),
-                MakeMonster("kulu", "眩鸟龙", "古代树森林", 2, 180, 12, 4, 70, 12, 16,
-                    (MaterialId.MonsterBone, 2, 4, 1f),
-                    (MaterialId.MonsterHide, 1, 3, 0.9f)),
-                MakeMonster("pukei", "毒妖鸟", "古代树森林", 3, 260, 16, 6, 110, 18, 22,
+                    (MaterialId.SharpClaw, 1, 1, 0.35f)),
+                MakeMonster("genprey", "黄速龙", MapId.Desert, MonsterSize.Small, 2, 95, 9, 2, 28, 5, 10,
+                    (MaterialId.MonsterHide, 1, 2, 1f),
+                    (MaterialId.SharpClaw, 1, 1, 0.4f)),
+                MakeMonster("yian_kut_ku", "怪鸟", MapId.ForestAndHills, MonsterSize.Large, 3, 320, 18, 6, 160, 22, 28,
                     (MaterialId.MonsterHide, 2, 4, 1f),
-                    (MaterialId.SharpClaw, 1, 2, 0.55f)),
-                MakeMonster("barroth", "土砂龙", "大蚁冢荒地", 4, 360, 22, 10, 160, 24, 28,
-                    (MaterialId.MonsterBone, 3, 5, 1f),
-                    (MaterialId.SharpClaw, 1, 3, 0.7f)),
-                MakeMonster("anjanath", "蛮颚龙", "古代树森林", 5, 520, 30, 12, 240, 32, 36,
-                    (MaterialId.SharpClaw, 2, 4, 0.9f),
-                    (MaterialId.MonsterHide, 3, 5, 1f),
-                    (MaterialId.WyvernGem, 1, 1, 0.12f)),
-                MakeMonster("rathian", "雌火龙", "古代树森林", 6, 700, 38, 16, 340, 42, 44,
+                    (MaterialId.SharpClaw, 1, 2, 0.6f)),
+                MakeMonster("gypceros", "毒怪鸟", MapId.Swamp, MonsterSize.Large, 4, 420, 22, 8, 210, 28, 34,
+                    (MaterialId.MonsterHide, 2, 5, 1f),
+                    (MaterialId.SharpClaw, 1, 3, 0.55f)),
+                MakeMonster("basarios", "岩龙", MapId.Volcano, MonsterSize.Large, 5, 560, 26, 14, 280, 34, 40,
+                    (MaterialId.MonsterBone, 3, 6, 1f),
+                    (MaterialId.WyvernGem, 1, 1, 0.15f)),
+                MakeMonster("rathian", "雌火龙", MapId.ForestAndHills, MonsterSize.Large, 6, 720, 36, 16, 360, 45, 48,
                     (MaterialId.SharpClaw, 2, 5, 1f),
-                    (MaterialId.WyvernGem, 1, 1, 0.22f),
+                    (MaterialId.WyvernGem, 1, 1, 0.25f),
                     (MaterialId.MonsterHide, 3, 6, 1f)),
-                MakeMonster("rathalos", "火龙", "古代树森林", 7, 920, 48, 20, 480, 55, 55,
+                MakeMonster("rathalos", "火龙", MapId.ForestAndHills, MonsterSize.Large, 7, 950, 46, 20, 500, 58, 58,
                     (MaterialId.SharpClaw, 3, 6, 1f),
                     (MaterialId.WyvernGem, 1, 2, 0.35f),
                     (MaterialId.ElderDragonBlood, 1, 1, 0.08f)),
-                MakeMonster("nergigante", "灭尽龙", "龙结晶之地", 8, 1300, 62, 26, 720, 80, 70,
+                MakeMonster("kushala", "钢龙", MapId.SnowyMountains, MonsterSize.Large, 8, 1300, 58, 26, 760, 80, 72,
                     (MaterialId.WyvernGem, 1, 2, 0.7f),
-                    (MaterialId.ElderDragonBlood, 1, 2, 0.45f),
+                    (MaterialId.ElderDragonBlood, 1, 2, 0.5f),
                     (MaterialId.SharpClaw, 4, 8, 1f))
             };
         }
@@ -297,7 +349,8 @@ namespace MHIdle.Data
         static MonsterDef MakeMonster(
             string id,
             string name,
-            string locale,
+            MapId mapId,
+            MonsterSize size,
             int rank,
             float hp,
             float atk,
@@ -311,7 +364,9 @@ namespace MHIdle.Data
             {
                 Id = id,
                 Name = name,
-                Locale = locale,
+                Locale = WeaponTaxonomy.MapName(mapId),
+                MapId = mapId,
+                Size = size,
                 Rank = rank,
                 MaxHp = hp,
                 Attack = atk,

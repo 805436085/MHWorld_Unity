@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using MHIdle.Data;
@@ -13,13 +12,21 @@ namespace MHIdle.Systems
         public float Time;
     }
 
+    public enum CombatMode
+    {
+        IdleSmall,   // 日常挂机小怪
+        ActiveHunt   // 主动出击大型（弹窗战斗）
+    }
+
     public class IdleCombatSystem
     {
         public HunterProgress Progress { get; private set; }
         public MonsterDef CurrentMonster { get; private set; }
+        public CombatMode Mode { get; private set; } = CombatMode.IdleSmall;
         public float PlayerHp { get; private set; }
         public float MonsterHp { get; private set; }
         public bool IsRunning { get; private set; } = true;
+        public bool IsCombatPopupOpen { get; private set; }
         public string LastRewardSummary { get; private set; } = "准备狩猎";
         public IReadOnlyList<CombatLogEntry> Logs => _logs;
 
@@ -30,33 +37,86 @@ namespace MHIdle.Systems
         System.Random _rng = new System.Random();
 
         const float MonsterAttackInterval = 2.2f;
-        const int MaxLogs = 8;
+        const int MaxLogs = 10;
 
         public void Initialize(HunterProgress progress)
         {
             Progress = progress;
             Progress.EnsureDefaults();
+            // 默认挂机第一只已解锁小怪
+            int idleIndex = FindFirstUnlockedOfSize(MonsterSize.Small);
+            Progress.CurrentMonsterIndex = idleIndex;
+            Mode = CombatMode.IdleSmall;
+            IsCombatPopupOpen = false;
             BindMonster(Progress.CurrentMonsterIndex);
             RefreshPlayerVitals(true);
-            AddLog($"猎人出发了。目标：{CurrentMonster.Name}");
+            AddLog($"日常挂机开始：{CurrentMonster.Name}");
         }
 
         public void SetRunning(bool running) => IsRunning = running;
+
+        public void CloseCombatPopup()
+        {
+            IsCombatPopupOpen = false;
+            // 关掉弹窗后回到挂机小怪
+            StartIdle();
+        }
+
+        public void StartIdle()
+        {
+            Mode = CombatMode.IdleSmall;
+            IsCombatPopupOpen = false;
+            int index = FindBestIdleTarget();
+            Progress.CurrentMonsterIndex = index;
+            BindMonster(index);
+            RefreshPlayerVitals(true);
+            IsRunning = true;
+            AddLog($"挂机中：{CurrentMonster.Name}");
+        }
+
+        public void StartActiveHunt(int monsterIndex)
+        {
+            if (monsterIndex < 0 || monsterIndex > Progress.HighestMonsterIndexUnlocked) return;
+            if (monsterIndex >= GameDatabase.Monsters.Count) return;
+            var monster = GameDatabase.Monsters[monsterIndex];
+            if (monster.Size != MonsterSize.Large) return;
+
+            Mode = CombatMode.ActiveHunt;
+            IsCombatPopupOpen = true;
+            Progress.CurrentMonsterIndex = monsterIndex;
+            BindMonster(monsterIndex);
+            RefreshPlayerVitals(true);
+            IsRunning = true;
+            float win = HuntSystem.EstimateWinRate(Progress, monster);
+            AddLog($"出击 {monster.Name}！{HuntSystem.FormatWinRate(win)}");
+        }
 
         public void SelectMonster(int index)
         {
             if (index < 0 || index > Progress.HighestMonsterIndexUnlocked) return;
             if (index >= GameDatabase.Monsters.Count) return;
 
-            Progress.CurrentMonsterIndex = index;
-            BindMonster(index);
-            RefreshPlayerVitals(true);
-            AddLog($"转移狩猎目标：{CurrentMonster.Name}");
+            var monster = GameDatabase.Monsters[index];
+            if (monster.Size == MonsterSize.Large)
+            {
+                StartActiveHunt(index);
+            }
+            else
+            {
+                Mode = CombatMode.IdleSmall;
+                IsCombatPopupOpen = false;
+                Progress.CurrentMonsterIndex = index;
+                BindMonster(index);
+                RefreshPlayerVitals(true);
+                AddLog($"挂机目标：{monster.Name}");
+            }
         }
 
         public void Tick(float deltaTime)
         {
             if (!IsRunning || Progress == null || CurrentMonster == null) return;
+            // 主动狩猎只在弹窗打开时推进
+            if (Mode == CombatMode.ActiveHunt && !IsCombatPopupOpen) return;
 
             _playerAttackTimer += deltaTime;
             _monsterAttackTimer += deltaTime;
@@ -82,30 +142,42 @@ namespace MHIdle.Systems
             }
         }
 
-        public void RecalculateAfterGearChange()
-        {
-            RefreshPlayerVitals(false);
-        }
+        public void RecalculateAfterGearChange() => RefreshPlayerVitals(false);
 
         void PlayerAttack()
         {
             if (MonsterHp <= 0f) return;
 
             float raw = Progress.GetPlayerAttack();
-            // 大剑偶尔真蓄力一击
-            bool charged = Progress.GetEquippedWeapon().Type == WeaponType.GreatSword && _rng.NextDouble() < 0.18f;
-            if (charged) raw *= 1.85f;
+            bool charged = Progress.GetEquippedWeapon().Type == WeaponType.GreatSword &&
+                           _rng.NextDouble() < Progress.GetChargeChance();
+            if (charged)
+            {
+                float chargeMul = 1.6f;
+                if (Progress.UnlockedTechniques.Contains(TechniqueId.GsCharge3.ToString())) chargeMul = 2.1f;
+                else if (Progress.UnlockedTechniques.Contains(TechniqueId.GsCharge2.ToString())) chargeMul = 1.85f;
+                raw *= chargeMul;
+            }
+
+            bool drawSlash = Progress.UnlockedTechniques.Contains(TechniqueId.GsDrawSlash.ToString()) &&
+                             _rng.NextDouble() < 0.12f;
+            if (drawSlash) raw *= 1.35f;
 
             float damage = Mathf.Max(1f, raw - CurrentMonster.Defense * 0.3f);
-            MonsterHp = Mathf.Max(0f, MonsterHp - damage);
 
-            string action = charged ? "蓄力斩" : "挥砍";
+            // 地图陷阱：大怪额外伤害
+            var map = Progress.GetMapProgress(CurrentMonster.MapId);
+            if (Mode == CombatMode.ActiveHunt && map.TrapUnlocked && _rng.NextDouble() < 0.1f)
+            {
+                damage *= 1.4f;
+                AddLog($"场地陷阱触发！额外伤害");
+            }
+
+            MonsterHp = Mathf.Max(0f, MonsterHp - damage);
+            string action = charged ? "蓄力斩" : (drawSlash ? "拔刀斩" : "挥砍");
             AddLog($"你对 {CurrentMonster.Name} {action}，造成 {damage:0} 伤害");
 
-            if (MonsterHp <= 0f)
-            {
-                OnMonsterDefeated();
-            }
+            if (MonsterHp <= 0f) OnMonsterDefeated();
         }
 
         void MonsterAttack()
@@ -113,27 +185,51 @@ namespace MHIdle.Systems
             if (PlayerHp <= 0f) return;
 
             float damage = Mathf.Max(1f, CurrentMonster.Attack - Progress.GetTotalDefense() * 0.35f);
+            if (Mode == CombatMode.ActiveHunt)
+            {
+                var map = Progress.GetMapProgress(CurrentMonster.MapId);
+                if (map.AdvantageUnlocked) damage *= 0.9f;
+            }
+
             PlayerHp = Mathf.Max(0f, PlayerHp - damage);
             AddLog($"{CurrentMonster.Name} 反击，造成 {damage:0} 伤害");
 
             if (PlayerHp <= 0f)
             {
-                AddLog("你被打倒了，营地疗伤后重新投入狩猎…");
-                RefreshPlayerVitals(true);
-                MonsterHp = CurrentMonster.MaxHp;
-                _playerAttackTimer = 0f;
-                _monsterAttackTimer = 0.6f;
+                if (Mode == CombatMode.ActiveHunt)
+                {
+                    string penalty = HuntSystem.ApplyDeathPenalty(Progress, _rng);
+                    LastRewardSummary = penalty;
+                    AddLog(penalty);
+                    AddLog("讨伐失败，返回营地…");
+                    IsRunning = false;
+                    SaveSystem.Save(Progress);
+                }
+                else
+                {
+                    AddLog("挂机被打倒，短暂休整后继续…");
+                    RefreshPlayerVitals(true);
+                    MonsterHp = CurrentMonster.MaxHp;
+                    _playerAttackTimer = 0f;
+                    _monsterAttackTimer = 0.6f;
+                }
             }
         }
 
         void OnMonsterDefeated()
         {
             Progress.TotalKills++;
+            if (CurrentMonster.Size == MonsterSize.Large) Progress.TotalLargeKills++;
+
             Progress.Zenny += CurrentMonster.ZennyReward;
             Progress.AddHunterRankExp(CurrentMonster.HunterRankExp);
 
-            var weaponProgress = Progress.GetEquippedWeaponProgress();
-            bool leveled = weaponProgress.AddExp(CurrentMonster.WeaponProficiencyExp);
+            var notes = ProficiencySystem.GrantCombatExp(
+                Progress,
+                Progress.GetEquippedWeapon(),
+                CurrentMonster.WeaponProficiencyExp,
+                CurrentMonster.Size,
+                CurrentMonster.MapId);
 
             var rewardBuilder = new StringBuilder();
             rewardBuilder.Append($"讨伐 {CurrentMonster.Name}！+{CurrentMonster.ZennyReward}z");
@@ -146,15 +242,18 @@ namespace MHIdle.Systems
                 rewardBuilder.Append($"，{ToMaterialName(drop.Material)} x{amount}");
             }
 
-            if (leveled)
+            var wp = Progress.GetEquippedWeaponProgress();
+            rewardBuilder.Append($"，外圈 Lv.{wp.Outer.Level}");
+
+            foreach (var note in notes)
             {
-                rewardBuilder.Append($"，熟练度升至 Lv.{weaponProgress.ProficiencyLevel}");
+                rewardBuilder.Append($"，{note}");
+                AddLog(note);
             }
 
             LastRewardSummary = rewardBuilder.ToString();
             AddLog(LastRewardSummary);
 
-            // 解锁下一只怪
             int nextIndex = Progress.CurrentMonsterIndex + 1;
             if (nextIndex < GameDatabase.Monsters.Count &&
                 Progress.HunterRank >= GameDatabase.Monsters[nextIndex].Rank - 1)
@@ -164,21 +263,56 @@ namespace MHIdle.Systems
                     nextIndex);
             }
 
-            // 若当前怪已被轻松碾压且已解锁下一只，则自动推进
-            if (Progress.CurrentMonsterIndex < Progress.HighestMonsterIndexUnlocked &&
-                Progress.GetPlayerAttack() > CurrentMonster.MaxHp * 0.35f)
+            if (Mode == CombatMode.ActiveHunt)
             {
-                Progress.CurrentMonsterIndex++;
-                BindMonster(Progress.CurrentMonsterIndex);
-                AddLog($"狩猎地推进：{CurrentMonster.Name}");
+                IsRunning = false;
+                AddLog("讨伐成功！可关闭战斗窗口。");
             }
             else
             {
-                MonsterHp = CurrentMonster.MaxHp;
+                // 挂机：若碾压且下一只仍是小怪则推进
+                int next = Progress.CurrentMonsterIndex + 1;
+                if (next <= Progress.HighestMonsterIndexUnlocked &&
+                    next < GameDatabase.Monsters.Count &&
+                    GameDatabase.Monsters[next].Size == MonsterSize.Small &&
+                    Progress.GetPlayerAttack() > CurrentMonster.MaxHp * 0.4f)
+                {
+                    Progress.CurrentMonsterIndex = next;
+                    BindMonster(next);
+                    AddLog($"挂机推进：{CurrentMonster.Name}");
+                }
+                else
+                {
+                    MonsterHp = CurrentMonster.MaxHp;
+                }
+
+                RefreshPlayerVitals(true);
             }
 
-            RefreshPlayerVitals(true);
             SaveSystem.Save(Progress);
+        }
+
+        int FindFirstUnlockedOfSize(MonsterSize size)
+        {
+            for (int i = 0; i <= Progress.HighestMonsterIndexUnlocked && i < GameDatabase.Monsters.Count; i++)
+            {
+                if (GameDatabase.Monsters[i].Size == size) return i;
+            }
+
+            return 0;
+        }
+
+        int FindBestIdleTarget()
+        {
+            int best = FindFirstUnlockedOfSize(MonsterSize.Small);
+            for (int i = 0; i <= Progress.HighestMonsterIndexUnlocked && i < GameDatabase.Monsters.Count; i++)
+            {
+                var m = GameDatabase.Monsters[i];
+                if (m.Size != MonsterSize.Small) continue;
+                best = i;
+            }
+
+            return best;
         }
 
         void BindMonster(int index)
@@ -201,10 +335,7 @@ namespace MHIdle.Systems
         void AddLog(string text)
         {
             _logs.Insert(0, new CombatLogEntry { Text = text, Time = Time.time });
-            if (_logs.Count > MaxLogs)
-            {
-                _logs.RemoveAt(_logs.Count - 1);
-            }
+            if (_logs.Count > MaxLogs) _logs.RemoveAt(_logs.Count - 1);
         }
 
         public static string ToMaterialName(MaterialId id)
@@ -220,15 +351,6 @@ namespace MHIdle.Systems
             }
         }
 
-        public static string ToWeaponTypeName(WeaponType type)
-        {
-            switch (type)
-            {
-                case WeaponType.GreatSword: return "大剑";
-                case WeaponType.LongSword: return "太刀";
-                case WeaponType.DualBlades: return "双剑";
-                default: return type.ToString();
-            }
-        }
+        public static string ToWeaponTypeName(WeaponType type) => WeaponTaxonomy.TypeName(type);
     }
 }
