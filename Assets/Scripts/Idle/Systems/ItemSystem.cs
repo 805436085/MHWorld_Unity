@@ -228,35 +228,37 @@ namespace MHIdle.Systems
             if (state.HealCooldown <= 0f)
             {
                 float hpRatio = playerMaxHp <= 0f ? 1f : playerHp / playerMaxHp;
-                if (hpRatio < 0.28f && TryHeal(progress, state, ItemId.MegaPotion, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                if (hpRatio < ItemBalance.HealHpMega &&
+                    TryHeal(progress, state, ItemId.MegaPotion, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
-                    state.HealCooldown = 2.2f;
+                    state.HealCooldown = ItemBalance.HealCooldownMega;
                 }
-                else if (hpRatio < 0.45f && TryHeal(progress, state, ItemId.Potion, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                else if (hpRatio < ItemBalance.HealHpPotion &&
+                         TryHeal(progress, state, ItemId.Potion, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
-                    state.HealCooldown = 1.8f;
+                    state.HealCooldown = ItemBalance.HealCooldownPotion;
                 }
-                else if (mode == CombatMode.ActiveHunt && hpRatio < 0.55f &&
+                else if (mode == CombatMode.ActiveHunt && hpRatio < ItemBalance.HealHpPowder &&
                          TryHeal(progress, state, ItemId.Lifepowder, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
-                    state.HealCooldown = 2.5f;
+                    state.HealCooldown = ItemBalance.HealCooldownPowder;
                 }
-                else if (mode == CombatMode.ActiveHunt && hpRatio < 0.7f &&
+                else if (mode == CombatMode.ActiveHunt && hpRatio < ItemBalance.HealHpSteak &&
                          TryHeal(progress, state, ItemId.WellDoneSteak, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
-                    state.HealCooldown = 2.0f;
+                    state.HealCooldown = ItemBalance.HealCooldownSteak;
                 }
             }
 
             if (mode != CombatMode.ActiveHunt) return;
 
-            // 闪光弹：血少或定时
+            // 闪光弹：血少时保命
             if (state.FlashCooldown <= 0f && state.FlashTimer <= 0f &&
-                playerHp / playerMaxHp < 0.6f)
+                playerHp / playerMaxHp < ItemBalance.FlashHpTrigger)
             {
                 if (TryFlash(progress, state, logs))
                 {
-                    state.FlashCooldown = 8f;
+                    state.FlashCooldown = ItemBalance.FlashCooldown;
                 }
             }
 
@@ -266,16 +268,18 @@ namespace MHIdle.Systems
                 if (TryTrap(progress, state, ItemId.ShockTrap, ref monsterHp, skills, logs) ||
                     TryTrap(progress, state, ItemId.PitfallTrap, ref monsterHp, skills, logs))
                 {
-                    state.TrapCooldown = 10f - skills.TrapChanceBonus * 8f;
+                    state.TrapCooldown = ItemBalance.TrapCooldown(skills.TrapChanceBonus);
                 }
             }
 
-            // 炸弹：陷阱/睡眠窗口中丢
-            if (state.BombCooldown <= 0f && state.ImmobilizeTimer > 0.5f && monsterHp > 0f)
+            // 炸弹：仅在定身窗口中丢，避免浪费
+            if (state.BombCooldown <= 0f &&
+                state.ImmobilizeTimer > ItemBalance.BombImmobilizeWindow &&
+                monsterHp > 0f)
             {
                 if (TryBomb(progress, state, ref monsterHp, skills, logs))
                 {
-                    state.BombCooldown = 12f;
+                    state.BombCooldown = ItemBalance.BombCooldown;
                 }
             }
         }
@@ -356,7 +360,7 @@ namespace MHIdle.Systems
             if (!ItemSystem.ConsumeFromLoadout(progress, ItemId.BarrelBomb)) return false;
 
             float damage = def.BombDamage;
-            if (skills.HasSleep) damage *= 1.35f; // 睡眠炸弹窗口
+            if (skills.HasSleep) damage *= ItemBalance.SleepBombMul;
             damage *= state.AttackBuffMul;
 
             monsterHp = Mathf.Max(0f, monsterHp - damage);

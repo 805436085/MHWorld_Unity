@@ -341,7 +341,7 @@ namespace MHIdle.Systems
             }
 
             var wp = Progress.GetEquippedWeaponProgress();
-            rewardBuilder.Append($"，外圈 Lv.{wp.Outer.Level}");
+            rewardBuilder.Append($"，{ProficiencyNaming.LevelLabel(ProficiencyNaming.Weapon, wp.Outer.Level)}");
 
             foreach (var note in notes)
             {

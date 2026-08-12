@@ -38,7 +38,7 @@ namespace MHIdle.Systems
             if (map.AdvantageUnlocked) raw += 0.06f;
             if (map.TrapUnlocked) raw += 0.04f;
 
-            // 大怪且外圈瓶颈未破：略微降低胜率提示，鼓励先养
+            // 大怪且专精瓶颈未破：略微降低胜率提示，鼓励先养
             var weapon = progress.GetEquippedWeaponProgress();
             if (monster.Size == MonsterSize.Large &&
                 weapon.Outer.Level % 5 == 0 &&

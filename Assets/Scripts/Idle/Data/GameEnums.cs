@@ -16,7 +16,7 @@ namespace MHIdle.Data
         HeavyBowgun      // 重弩
     }
 
-    /// <summary>内内圈：武器风格组。</summary>
+    /// <summary>心法层：武器风格组（原内内圈）。</summary>
     public enum WeaponStyleGroup
     {
         Aggressive,   // 太刀 / 双剑 —— 进攻特化
