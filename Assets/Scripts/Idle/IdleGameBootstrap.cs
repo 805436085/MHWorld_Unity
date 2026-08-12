@@ -1,21 +1,23 @@
-using MHIdle.UI;
 using UnityEngine;
 
 namespace MHIdle
 {
     /// <summary>
-    /// 无需改场景：进入任意场景 Play 后自动拉起挂机系统与 UI。
+    /// 独立工程试玩时自动拉起；并入已发布主工程后请把 AutoLaunchInAnyScene 设为 false。
     /// </summary>
     public static class IdleGameBootstrap
     {
+        /// <summary>
+        /// true：任意场景加载后自动 Enter（本仓库单独 Play 用）。
+        /// false：不自动启动，由主工程大厅调用 IdleGameEntry.Enter()。
+        /// </summary>
+        public const bool AutoLaunchInAnyScene = true;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            if (Object.FindObjectOfType<IdleGameManager>() != null) return;
-
-            var root = new GameObject("IdleGame");
-            root.AddComponent<IdleGameManager>();
-            root.AddComponent<IdleGameUI>();
+            if (!AutoLaunchInAnyScene) return;
+            IdleGameEntry.Enter();
         }
     }
 }

@@ -149,6 +149,12 @@ namespace MHIdle.UI
             GUILayout.BeginVertical(GUILayout.Width(110f * _uiScale));
             GUILayout.Label($"HR{progress.HunterRank}", _headerStyle);
             DrawCurrencyChip(progress.Zenny, compact: true);
+            if (!IdleGameBootstrap.AutoLaunchInAnyScene)
+            {
+                if (GUILayout.Button("返回大厅", GUILayout.Height(26f * _uiScale)))
+                    IdleGameEntry.Exit();
+            }
+
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
             GUILayout.EndArea();

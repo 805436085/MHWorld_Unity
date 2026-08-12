@@ -164,6 +164,24 @@ namespace MHIdle
             if (result == ItemActionResult.Success) SaveSystem.Save(Progress);
         }
 
+        /// <summary>主工程调用 Exit 前：停战斗并落盘。</summary>
+        public void PrepareForHostExit()
+        {
+            if (Combat != null)
+            {
+                Combat.SetRunning(false);
+                if (Combat.IsCombatPopupOpen) Combat.CloseCombatPopup();
+            }
+
+            if (Progress != null) SaveSystem.Save(Progress);
+            if (Instance == this) Instance = null;
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
         void OnApplicationQuit()
         {
             if (Progress != null) SaveSystem.Save(Progress);
