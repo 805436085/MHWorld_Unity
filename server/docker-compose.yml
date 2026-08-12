@@ -1,0 +1,23 @@
+services:
+  mh-idle-server:
+    build: .
+    container_name: mh-idle-server
+    restart: unless-stopped
+    ports:
+      # 左边可改成飞牛上未被占用的端口，例如 18080:8000
+      - "8000:8000"
+    environment:
+      MH_ALLOW_GUEST_LOGIN: "true"
+      MH_DB_PATH: /data/mh_idle.db
+      # 正式环境再填（与主小游戏同一个 AppID）
+      MH_WECHAT_APP_ID: ""
+      MH_WECHAT_APP_SECRET: ""
+      MH_TOKEN_TTL_SECONDS: "2592000"
+    volumes:
+      # 存档数据库持久化到飞牛本地目录（compose 同级的 data 文件夹）
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

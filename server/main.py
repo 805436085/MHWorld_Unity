@@ -34,7 +34,8 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 ROOT = Path(__file__).resolve().parent
-DB_PATH = ROOT / "data" / "mh_idle.db"
+# 飞牛/Docker 部署时可挂载卷到 /data，并通过环境变量指定
+DB_PATH = Path(os.getenv("MH_DB_PATH", str(ROOT / "data" / "mh_idle.db")))
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
