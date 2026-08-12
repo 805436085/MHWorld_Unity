@@ -5,7 +5,18 @@
 本作独立的存档/登录后端，**不依赖主游戏服务器**。  
 同一微信小游戏 AppID 下，登录凭证仍来自微信；账号与存档数据存在你自己的机器上。
 
-## 本地启动
+## 飞牛 NAS 部署（推荐）
+
+详见：**[飞牛NAS部署.md](./飞牛NAS部署.md)**
+
+核心命令（在 `server` 目录）：
+
+```bash
+mkdir -p data
+docker compose up -d --build
+```
+
+## 本地启动（电脑调试）
 
 ```bash
 cd server
@@ -26,11 +37,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | GET | `/api/save` | Header `Authorization: Bearer <token>` |
 | PUT | `/api/save` | body `{ "data": { ...存档JSON... }, "revision": 0 }` |
 
-## 部署到你的服务器
+## 环境变量
 
-1. 把 `server/` 拷到机器上  
-2. 安装依赖并后台运行（可用 `systemd` 或 `tmux`）  
-3. 前面加 Nginx，配 HTTPS  
-4. Unity 里把 `CloudSaveClient` 的 `baseUrl` 改成你的域名  
+见 `.env.example`。Docker 里也可写在 `docker-compose.yml` 的 `environment`。
 
-正式微信登录：在 `.env` 填 `MH_WECHAT_APP_ID` / `MH_WECHAT_APP_SECRET`，客户端改传真正的 `wx.login` code。
+正式微信登录：填 `MH_WECHAT_APP_ID` / `MH_WECHAT_APP_SECRET`，客户端传真正的 `wx.login` code。
