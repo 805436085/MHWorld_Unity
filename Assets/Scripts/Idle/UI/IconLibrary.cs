@@ -30,6 +30,59 @@ namespace MHIdle.UI
             Load("armor_chest");
             Load("armor_arms");
             Load("armor_legs");
+            Load("item_potion");
+            Load("item_mega_potion");
+            Load("item_steak");
+            Load("item_demondrug");
+            Load("item_armorskin");
+            Load("item_lifepowder");
+            Load("item_pitfall");
+            Load("item_shock_trap");
+            Load("item_flash");
+            Load("item_barrel_bomb");
+            Load("item_tranq");
+            Load("item_paintball");
+        }
+
+        public static Texture2D GetItem(ItemId id)
+        {
+            EnsureLoaded();
+            switch (id)
+            {
+                case ItemId.Potion: return Get("item_potion");
+                case ItemId.MegaPotion: return Get("item_mega_potion");
+                case ItemId.WellDoneSteak: return Get("item_steak");
+                case ItemId.Demondrug: return Get("item_demondrug");
+                case ItemId.Armorskin: return Get("item_armorskin");
+                case ItemId.Lifepowder: return Get("item_lifepowder");
+                case ItemId.PitfallTrap: return Get("item_pitfall");
+                case ItemId.ShockTrap: return Get("item_shock_trap");
+                case ItemId.FlashBomb: return Get("item_flash");
+                case ItemId.BarrelBomb: return Get("item_barrel_bomb");
+                case ItemId.TranqBomb: return Get("item_tranq");
+                case ItemId.Paintball: return Get("item_paintball");
+                default: return null;
+            }
+        }
+
+        public static Color ItemTint(ItemId id)
+        {
+            switch (id)
+            {
+                case ItemId.Potion: return new Color(0.55f, 0.9f, 0.55f);
+                case ItemId.MegaPotion: return new Color(0.35f, 0.85f, 0.7f);
+                case ItemId.WellDoneSteak: return new Color(0.95f, 0.6f, 0.4f);
+                case ItemId.Demondrug: return new Color(0.95f, 0.35f, 0.35f);
+                case ItemId.Armorskin: return new Color(0.55f, 0.7f, 0.95f);
+                case ItemId.Lifepowder: return new Color(0.85f, 0.9f, 0.55f);
+                case ItemId.PitfallTrap: return new Color(0.7f, 0.55f, 0.35f);
+                case ItemId.ShockTrap: return new Color(0.95f, 0.85f, 0.35f);
+                case ItemId.FlashBomb: return new Color(0.95f, 0.95f, 0.7f);
+                case ItemId.BarrelBomb: return new Color(0.9f, 0.45f, 0.25f);
+                case ItemId.TranqBomb: return new Color(0.7f, 0.75f, 0.95f);
+                case ItemId.Paintball: return new Color(0.85f, 0.55f, 0.85f);
+                default: return Color.white;
+            }
         }
 
         public static Texture2D GetMaterial(MaterialId id)

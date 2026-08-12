@@ -283,6 +283,7 @@ namespace MHIdle.UI
                     if (count <= 0) continue;
                     var def = ItemDatabase.Get(id);
                     GUILayout.BeginHorizontal();
+                    IconLibrary.DrawIcon(IconLibrary.GetItem(id), IconSm * _uiScale, IconLibrary.ItemTint(id));
                     GUILayout.Label($"{def.Name} ×{count}", _labelStyle);
                     if (GUILayout.Button("卸1", GUILayout.Width(40f * _uiScale), GUILayout.Height(24f * _uiScale)))
                         manager.UnpackItem(id);
@@ -582,8 +583,13 @@ namespace MHIdle.UI
                 int stock = progress.GetItem(def.Id);
                 int packed = progress.GetLoadoutCount(def.Id);
                 GUILayout.BeginVertical(_boxStyle);
+                GUILayout.BeginHorizontal();
+                IconLibrary.DrawIcon(IconLibrary.GetItem(def.Id), IconMd * _uiScale, IconLibrary.ItemTint(def.Id));
+                GUILayout.BeginVertical();
                 GUILayout.Label($"{def.Name}  仓{stock}  包{packed}/{def.MaxStack}", _labelStyle);
                 GUILayout.Label(def.Description, _smallStyle);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
                 GUILayout.BeginHorizontal();
                 GUI.enabled = stock > 0;
                 if (GUILayout.Button("+1", GUILayout.Height(28f * _uiScale))) manager.PackItem(def.Id);
@@ -619,9 +625,14 @@ namespace MHIdle.UI
             foreach (var def in ItemDatabase.All)
             {
                 GUILayout.BeginVertical(_boxStyle);
+                GUILayout.BeginHorizontal();
+                IconLibrary.DrawIcon(IconLibrary.GetItem(def.Id), IconMd * _uiScale, IconLibrary.ItemTint(def.Id));
+                GUILayout.BeginVertical();
                 GUILayout.Label($"{def.Name}  库存 {progress.GetItem(def.Id)}", _labelStyle);
                 GUILayout.Label($"{def.Description}", _smallStyle);
                 GUILayout.Label($"价 {def.ShopPrice}z · HR{def.UnlockHunterRank}", _smallStyle);
+                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
                 if (def.CraftCost != null && def.CraftCost.Count > 0)
                     DrawCostRow(def.CraftZenny, def.CraftCost);
 
