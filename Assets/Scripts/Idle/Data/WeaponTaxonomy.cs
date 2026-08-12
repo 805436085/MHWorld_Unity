@@ -98,7 +98,7 @@ namespace MHIdle.Data
             {
                 Id = TechniqueId.GsCharge2,
                 Name = "二段蓄力",
-                Description = "蓄力砍伤害提升，外圈 Lv.3 解锁。",
+                Description = $"蓄力砍伤害提升，{ProficiencyNaming.Weapon} Lv.3 解锁。",
                 WeaponType = WeaponType.GreatSword,
                 RequiredOuterLevel = 3,
                 RequiredTypeLevel = 1,
@@ -109,7 +109,7 @@ namespace MHIdle.Data
             {
                 Id = TechniqueId.GsCharge3,
                 Name = "三段蓄力",
-                Description = "真蓄力一击。外圈 Lv.8 + 大剑系 Lv.4。",
+                Description = $"真蓄力一击。{ProficiencyNaming.Weapon} Lv.8 + 大剑系 Lv.4。",
                 WeaponType = WeaponType.GreatSword,
                 RequiredOuterLevel = 8,
                 RequiredTypeLevel = 4,

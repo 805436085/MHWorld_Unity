@@ -36,7 +36,7 @@ namespace MHIdle.Model
     {
         public string WeaponId;
         public bool Owned;
-        public RingProgress Outer = new RingProgress(); // 外圈：具体武器
+        public RingProgress Outer = new RingProgress(); // 专精：具体武器
         public bool BottleneckBroken; // 是否已被大怪突破过瓶颈
 
         // 兼容旧字段读取
@@ -76,11 +76,11 @@ namespace MHIdle.Model
     }
 
     /// <summary>
-    /// 三圈熟练度结算：外圈武器 / 内圈武器种 / 内内圈风格组。
+    /// 三层熟练度结算：专精（武器）/ 武种 / 心法（风格组）。
     /// </summary>
     public static class ProficiencySystem
     {
-        // 经验分配比例：外圈为主，内圈/内内圈较慢
+        // 经验分配比例：专精为主，武种/心法较慢
         const float OuterRatio = 1f;
         const float TypeRatio = 0.45f;
         const float StyleRatio = 0.2f;
@@ -102,7 +102,7 @@ namespace MHIdle.Model
             int typeGain = Mathf.Max(1, Mathf.RoundToInt(baseExp * TypeRatio));
             int styleGain = Mathf.Max(1, Mathf.RoundToInt(baseExp * StyleRatio));
 
-            // 小怪：若外圈卡在瓶颈点（每 5 级）且未破，则外圈收益大幅衰减
+            // 小怪：若专精卡在瓶颈点（每 5 级）且未破，则专精收益大幅衰减
             bool atBottleneck = weaponProgress.Outer.Level > 0 &&
                                weaponProgress.Outer.Level % 5 == 0 &&
                                !weaponProgress.BottleneckBroken;
@@ -110,14 +110,14 @@ namespace MHIdle.Model
             if (size == MonsterSize.Small && atBottleneck)
             {
                 outerGain = Mathf.Max(1, outerGain / 5);
-                notes.Add("外圈瓶颈：小怪收益降低，需讨伐大型怪物突破");
+                notes.Add(ProficiencyNaming.BottleneckIdleNote);
             }
 
             if (size == MonsterSize.Large && atBottleneck)
             {
                 weaponProgress.BottleneckBroken = true;
                 outerGain = Mathf.RoundToInt(outerGain * 1.8f);
-                notes.Add("大型讨伐突破外圈瓶颈！");
+                notes.Add(ProficiencyNaming.BottleneckBrokenNote);
             }
 
             // 过了瓶颈后，升到下一级重置瓶颈标记，等待下一个 5 级门槛

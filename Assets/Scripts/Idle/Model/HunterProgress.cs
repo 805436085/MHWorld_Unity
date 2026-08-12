@@ -27,10 +27,10 @@ namespace MHIdle.Model
         public Dictionary<string, string> EquippedArmor = new Dictionary<string, string>();
         public HashSet<string> OwnedArmor = new HashSet<string>();
 
-        /// <summary>内圈：武器种熟练度 key = WeaponType.ToString()</summary>
+        /// <summary>武种层：武器种熟练度 key = WeaponType.ToString()</summary>
         public Dictionary<string, RingProgress> TypeRings = new Dictionary<string, RingProgress>();
 
-        /// <summary>内内圈：风格组 key = WeaponStyleGroup.ToString()</summary>
+        /// <summary>心法层：风格组 key = WeaponStyleGroup.ToString()</summary>
         public Dictionary<string, RingProgress> StyleRings = new Dictionary<string, RingProgress>();
 
         public Dictionary<string, MapProgress> Maps = new Dictionary<string, MapProgress>();
