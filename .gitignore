@@ -2,3 +2,11 @@
 Library
 Logs
 Temp
+
+# LoginServer
+LoginServer/**/__pycache__/
+LoginServer/**/*.py[cod]
+LoginServer/data/
+LoginServer/*.db
+LoginServer/.venv/
+LoginServer/venv/
