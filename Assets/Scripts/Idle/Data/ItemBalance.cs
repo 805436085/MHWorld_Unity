@@ -19,12 +19,17 @@ namespace MHIdle.Data
         public const float TrapCooldownSkillFactor = 6f;
 
         public const float BombCooldown = 16f;
+        public const float SmallBombCooldown = 18f;
+        public const float MegaBombCooldown = 20f;
         public const float FlashCooldown = 10f;
+        public const float SonicCooldown = 12f;
 
         public const float HealCooldownMega = 2.4f;
         public const float HealCooldownPotion = 2.0f;
         public const float HealCooldownPowder = 2.8f;
         public const float HealCooldownSteak = 2.2f;
+        public const float HealCooldownMax = 3.2f;
+        public const float HealCooldownHerb = 2.1f;
 
         // —— 自动使用阈值 ——
         public const float HealHpMega = 0.28f;

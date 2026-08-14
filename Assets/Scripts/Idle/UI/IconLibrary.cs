@@ -52,15 +52,29 @@ namespace MHIdle.UI
                 case ItemId.Potion: return Get("item_potion");
                 case ItemId.MegaPotion: return Get("item_mega_potion");
                 case ItemId.WellDoneSteak: return Get("item_steak");
+                case ItemId.Antidote: return Get("item_potion");
+                case ItemId.HerbalMedicine: return Get("item_lifepowder");
+                case ItemId.Nutrients: return Get("item_steak");
+                case ItemId.MaxPotion: return Get("item_mega_potion");
+                case ItemId.AncientPotion: return Get("item_demondrug");
                 case ItemId.Demondrug: return Get("item_demondrug");
+                case ItemId.MegaDemondrug: return Get("item_demondrug");
                 case ItemId.Armorskin: return Get("item_armorskin");
+                case ItemId.MegaArmorskin: return Get("item_armorskin");
+                case ItemId.MightSeed: return Get("item_steak");
+                case ItemId.AdamantSeed: return Get("item_armorskin");
+                case ItemId.DashJuice: return Get("item_demondrug");
                 case ItemId.Lifepowder: return Get("item_lifepowder");
                 case ItemId.PitfallTrap: return Get("item_pitfall");
                 case ItemId.ShockTrap: return Get("item_shock_trap");
                 case ItemId.FlashBomb: return Get("item_flash");
+                case ItemId.SonicBomb: return Get("item_flash");
                 case ItemId.BarrelBomb: return Get("item_barrel_bomb");
+                case ItemId.SmallBarrelBomb: return Get("item_barrel_bomb");
+                case ItemId.MegaBarrelBomb: return Get("item_barrel_bomb");
                 case ItemId.TranqBomb: return Get("item_tranq");
                 case ItemId.Paintball: return Get("item_paintball");
+                case ItemId.Farcaster: return Get("item_paintball");
                 default: return null;
             }
         }
@@ -72,15 +86,29 @@ namespace MHIdle.UI
                 case ItemId.Potion: return new Color(0.55f, 0.9f, 0.55f);
                 case ItemId.MegaPotion: return new Color(0.35f, 0.85f, 0.7f);
                 case ItemId.WellDoneSteak: return new Color(0.95f, 0.6f, 0.4f);
+                case ItemId.Antidote: return new Color(0.9f, 0.9f, 0.35f);
+                case ItemId.HerbalMedicine: return new Color(0.45f, 0.82f, 0.4f);
+                case ItemId.Nutrients: return new Color(0.95f, 0.78f, 0.45f);
+                case ItemId.MaxPotion: return new Color(0.95f, 0.85f, 0.35f);
+                case ItemId.AncientPotion: return new Color(0.72f, 0.45f, 0.95f);
                 case ItemId.Demondrug: return new Color(0.95f, 0.35f, 0.35f);
+                case ItemId.MegaDemondrug: return new Color(0.85f, 0.15f, 0.2f);
                 case ItemId.Armorskin: return new Color(0.55f, 0.7f, 0.95f);
+                case ItemId.MegaArmorskin: return new Color(0.35f, 0.5f, 0.95f);
+                case ItemId.MightSeed: return new Color(0.95f, 0.45f, 0.25f);
+                case ItemId.AdamantSeed: return new Color(0.65f, 0.75f, 0.95f);
+                case ItemId.DashJuice: return new Color(0.95f, 0.8f, 0.3f);
                 case ItemId.Lifepowder: return new Color(0.85f, 0.9f, 0.55f);
                 case ItemId.PitfallTrap: return new Color(0.7f, 0.55f, 0.35f);
                 case ItemId.ShockTrap: return new Color(0.95f, 0.85f, 0.35f);
                 case ItemId.FlashBomb: return new Color(0.95f, 0.95f, 0.7f);
+                case ItemId.SonicBomb: return new Color(0.55f, 0.9f, 0.95f);
                 case ItemId.BarrelBomb: return new Color(0.9f, 0.45f, 0.25f);
+                case ItemId.SmallBarrelBomb: return new Color(0.85f, 0.65f, 0.35f);
+                case ItemId.MegaBarrelBomb: return new Color(0.85f, 0.2f, 0.15f);
                 case ItemId.TranqBomb: return new Color(0.7f, 0.75f, 0.95f);
                 case ItemId.Paintball: return new Color(0.85f, 0.55f, 0.85f);
+                case ItemId.Farcaster: return new Color(0.75f, 0.85f, 0.95f);
                 default: return Color.white;
             }
         }
@@ -93,7 +121,13 @@ namespace MHIdle.UI
                 case MaterialId.MonsterBone: return Get("material_bone");
                 case MaterialId.MonsterHide: return Get("material_hide");
                 case MaterialId.SharpClaw: return Get("material_claw");
+                case MaterialId.MonsterScale: return Get("material_hide");
+                case MaterialId.Fang: return Get("material_claw");
+                case MaterialId.MonsterFluid: return Get("material_blood");
+                case MaterialId.Webbing: return Get("material_hide");
+                case MaterialId.Horn: return Get("material_bone");
                 case MaterialId.WyvernGem: return Get("material_gem");
+                case MaterialId.Plate: return Get("material_gem");
                 case MaterialId.ElderDragonBlood: return Get("material_blood");
                 default: return null;
             }
@@ -132,7 +166,13 @@ namespace MHIdle.UI
                 case MaterialId.MonsterBone: return new Color(0.92f, 0.88f, 0.72f);
                 case MaterialId.MonsterHide: return new Color(0.72f, 0.52f, 0.32f);
                 case MaterialId.SharpClaw: return new Color(0.85f, 0.78f, 0.7f);
+                case MaterialId.MonsterScale: return new Color(0.45f, 0.78f, 0.42f);
+                case MaterialId.Fang: return new Color(0.92f, 0.9f, 0.82f);
+                case MaterialId.MonsterFluid: return new Color(0.85f, 0.7f, 0.25f);
+                case MaterialId.Webbing: return new Color(0.55f, 0.62f, 0.85f);
+                case MaterialId.Horn: return new Color(0.78f, 0.7f, 0.48f);
                 case MaterialId.WyvernGem: return new Color(0.45f, 0.85f, 0.95f);
+                case MaterialId.Plate: return new Color(0.95f, 0.75f, 0.35f);
                 case MaterialId.ElderDragonBlood: return new Color(0.85f, 0.25f, 0.3f);
                 default: return Color.white;
             }

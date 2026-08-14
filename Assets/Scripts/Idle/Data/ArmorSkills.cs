@@ -17,7 +17,8 @@ namespace MHIdle.Data
         Paralysis,   // 麻痹属性强化
         TrapMaster,  // 陷阱师
         ItemUse,     // 道具使用强化
-        RecSpeed     // 回复速度
+        RecSpeed,    // 回复速度
+        Evasion      // 回避（迅龙气质）
     }
 
     [Serializable]
@@ -73,6 +74,7 @@ namespace MHIdle.Data
                 case SkillId.TrapMaster: return "陷阱师";
                 case SkillId.ItemUse: return "道具使用";
                 case SkillId.RecSpeed: return "回复速度";
+                case SkillId.Evasion: return "回避";
                 default: return id.ToString();
             }
         }
@@ -115,6 +117,9 @@ namespace MHIdle.Data
             // 回复速度
             Tier(SkillId.RecSpeed, 10, "回复速度+1", "战斗中缓慢回血", heal: 4f),
             Tier(SkillId.RecSpeed, 15, "回复速度+2", "回血加快", heal: 9f),
+            // 回避
+            Tier(SkillId.Evasion, 10, "回避性能+1", "受伤 -8%", incoming: 0.92f),
+            Tier(SkillId.Evasion, 15, "回避性能+2", "受伤 -16%", incoming: 0.84f),
         };
 
         static SkillTierDef Tier(

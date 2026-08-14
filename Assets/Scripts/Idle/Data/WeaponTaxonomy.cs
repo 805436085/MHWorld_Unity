@@ -72,6 +72,9 @@ namespace MHIdle.Data
                 case MapId.Swamp: return "沼泽";
                 case MapId.Volcano: return "火山";
                 case MapId.SnowyMountains: return "雪山";
+                case MapId.GreatForest: return "树海";
+                case MapId.Gorge: return "溪谷";
+                case MapId.Tower: return "塔";
                 default: return id.ToString();
             }
         }
@@ -94,79 +97,71 @@ namespace MHIdle.Data
     {
         public static readonly IReadOnlyList<TechniqueDef> All = new List<TechniqueDef>
         {
-            new TechniqueDef
-            {
-                Id = TechniqueId.GsCharge2,
-                Name = "二段蓄力",
-                Description = $"蓄力砍伤害提升，{ProficiencyNaming.Weapon} Lv.3 解锁。",
-                WeaponType = WeaponType.GreatSword,
-                RequiredOuterLevel = 3,
-                RequiredTypeLevel = 1,
-                DamageBonus = 0.08f,
-                ChargeBonus = 0.05f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.GsCharge3,
-                Name = "三段蓄力",
-                Description = $"真蓄力一击。{ProficiencyNaming.Weapon} Lv.8 + 大剑系 Lv.4。",
-                WeaponType = WeaponType.GreatSword,
-                RequiredOuterLevel = 8,
-                RequiredTypeLevel = 4,
-                DamageBonus = 0.18f,
-                ChargeBonus = 0.12f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.GsDrawSlash,
-                Name = "拔刀斩",
-                Description = "出鞘第一击暴击率上升。大怪突破后易解锁。",
-                WeaponType = WeaponType.GreatSword,
-                RequiredOuterLevel = 5,
-                RequiredTypeLevel = 2,
-                DamageBonus = 0.1f,
-                ChargeBonus = 0f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.LsSpiritBlade,
-                Name = "气刃斩",
-                Description = "太刀气刃槽收益提升。",
-                WeaponType = WeaponType.LongSword,
-                RequiredOuterLevel = 4,
-                RequiredTypeLevel = 2,
-                DamageBonus = 0.1f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.LsFadeSlash,
-                Name = "登龙剑预备",
-                Description = "太刀收招位移与补刀窗口。",
-                WeaponType = WeaponType.LongSword,
-                RequiredOuterLevel = 7,
-                RequiredTypeLevel = 3,
-                DamageBonus = 0.12f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.DbDemonMode,
-                Name = "鬼人化",
-                Description = "双剑鬼人状态持续时间延长。",
-                WeaponType = WeaponType.DualBlades,
-                RequiredOuterLevel = 5,
-                RequiredTypeLevel = 2,
-                DamageBonus = 0.1f
-            },
-            new TechniqueDef
-            {
-                Id = TechniqueId.SnSGuardSlash,
-                Name = "防御斩",
-                Description = "单手剑守中反击。",
-                WeaponType = WeaponType.SwordAndShield,
-                RequiredOuterLevel = 4,
-                RequiredTypeLevel = 2,
-                DamageBonus = 0.06f
-            }
+            T(TechniqueId.GsCharge2, "二段蓄力", $"蓄力砍伤害提升，{ProficiencyNaming.Weapon} Lv.3 解锁。",
+                WeaponType.GreatSword, 3, 1, 0.08f, 0.05f),
+            T(TechniqueId.GsCharge3, "三段蓄力", $"真蓄力一击。{ProficiencyNaming.Weapon} Lv.8 + 大剑系 Lv.4。",
+                WeaponType.GreatSword, 8, 4, 0.18f, 0.12f),
+            T(TechniqueId.GsDrawSlash, "拔刀斩", "出鞘第一击暴击率上升。大怪突破后易解锁。",
+                WeaponType.GreatSword, 5, 2, 0.1f, 0f),
+            T(TechniqueId.LsSpiritBlade, "气刃斩", "太刀气刃槽收益提升。",
+                WeaponType.LongSword, 4, 2, 0.1f, 0f),
+            T(TechniqueId.LsFadeSlash, "登龙剑预备", "太刀收招位移与补刀窗口。",
+                WeaponType.LongSword, 7, 3, 0.12f, 0f),
+            T(TechniqueId.DbDemonMode, "鬼人化", "双剑鬼人状态持续时间延长。",
+                WeaponType.DualBlades, 5, 2, 0.1f, 0f),
+            T(TechniqueId.DbDemonDance, "乱舞", "鬼人乱舞收招，对定身目标额外伤害。",
+                WeaponType.DualBlades, 8, 4, 0.14f, 0f),
+            T(TechniqueId.SnSGuardSlash, "防御斩", "单手剑守中反击。",
+                WeaponType.SwordAndShield, 4, 2, 0.06f, 0f),
+            T(TechniqueId.SnSRoundSlash, "回旋斩", "道具后立刻接斩，提升一轮输出。",
+                WeaponType.SwordAndShield, 7, 3, 0.1f, 0f),
+            T(TechniqueId.HmCharge, "蓄力回转", "大锤蓄力等级提升。",
+                WeaponType.Hammer, 4, 2, 0.1f, 0.08f),
+            T(TechniqueId.HmUpswing, "上捞敲", "击昏窗口扩大。",
+                WeaponType.Hammer, 8, 4, 0.12f, 0f),
+            T(TechniqueId.HhRecital, "演奏", "狩猎笛旋律生效，全队攻击微增。",
+                WeaponType.HuntingHorn, 4, 2, 0.08f, 0f),
+            T(TechniqueId.HhEncore, "重奏", "旋律二次强化。",
+                WeaponType.HuntingHorn, 8, 3, 0.12f, 0f),
+            T(TechniqueId.LnCounter, "防御反击", "长枪反击刺。",
+                WeaponType.Lance, 4, 2, 0.08f, 0f),
+            T(TechniqueId.LnCharge, "突进", "长枪突进刺命中强化。",
+                WeaponType.Lance, 7, 3, 0.1f, 0f),
+            T(TechniqueId.GlBurst, "全弹发射", "铳枪炮击爆发。",
+                WeaponType.Gunlance, 5, 2, 0.1f, 0f),
+            T(TechniqueId.GlWyrmstake, "龙击炮", "龙击炮贯穿伤害。",
+                WeaponType.Gunlance, 8, 4, 0.14f, 0f),
+            T(TechniqueId.BowPowerShot, "刚射", "弓刚射追加一箭。",
+                WeaponType.Bow, 4, 2, 0.1f, 0f),
+            T(TechniqueId.BowDragonPiercer, "龙之箭", "贯穿蓄力箭。",
+                WeaponType.Bow, 8, 4, 0.14f, 0f),
+            T(TechniqueId.LbgRapidFire, "速射", "轻弩对应弹药速射。",
+                WeaponType.LightBowgun, 5, 2, 0.1f, 0f),
+            T(TechniqueId.HbgSiege, "固定射击", "重弩架枪提高火力。",
+                WeaponType.HeavyBowgun, 5, 2, 0.12f, 0f)
         };
+
+        static TechniqueDef T(
+            TechniqueId id,
+            string name,
+            string desc,
+            WeaponType type,
+            int outer,
+            int typeLv,
+            float dmg,
+            float charge)
+        {
+            return new TechniqueDef
+            {
+                Id = id,
+                Name = name,
+                Description = desc,
+                WeaponType = type,
+                RequiredOuterLevel = outer,
+                RequiredTypeLevel = typeLv,
+                DamageBonus = dmg,
+                ChargeBonus = charge
+            };
+        }
     }
 }

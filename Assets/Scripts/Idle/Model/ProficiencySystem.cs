@@ -11,7 +11,7 @@ namespace MHIdle.Model
         public int Level = 1;
         public int Exp;
 
-        public int ExpToNext => 25 + Level * 18;
+        public int ExpToNext => 42 + Level * 26;
 
         public bool AddExp(int amount)
         {
@@ -56,8 +56,8 @@ namespace MHIdle.Model
 
         public bool AddExp(int amount) => Outer.AddExp(amount);
 
-        public float DamageMultiplier => 1f + (Outer.Level - 1) * 0.035f;
-        public float SpeedMultiplier => 1f + (Outer.Level - 1) * 0.012f;
+        public float DamageMultiplier => 1f + (Outer.Level - 1) * 0.028f;
+        public float SpeedMultiplier => 1f + (Outer.Level - 1) * 0.006f;
     }
 
     [Serializable]
@@ -82,8 +82,8 @@ namespace MHIdle.Model
     {
         // 经验分配比例：专精为主，武种/心法较慢
         const float OuterRatio = 1f;
-        const float TypeRatio = 0.45f;
-        const float StyleRatio = 0.2f;
+        const float TypeRatio = 0.35f;
+        const float StyleRatio = 0.12f;
 
         public static List<string> GrantCombatExp(
             HunterProgress progress,

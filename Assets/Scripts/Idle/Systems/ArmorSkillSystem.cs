@@ -132,6 +132,7 @@ namespace MHIdle.Systems
             if (fx.ActiveTiers.Count == 0) return "未激活技能 · 凑齐防具点数可形成 Build";
 
             // 粗略流派标签
+            if (fx.IncomingDamageMul <= 0.88f && fx.CritChance >= 0.08f) return "流派：回避会心";
             if (fx.HasSleep && fx.ChargeChanceBonus > 0f) return "流派：睡眠暴力一刀";
             if (fx.HasParalysis) return "流派：麻痹持续输出";
             if (fx.HasPoison && fx.StatusChance > 0.1f) return "流派：毒异常压制";

@@ -42,7 +42,7 @@ namespace MHIdle.Model
         /// <summary>仓库道具库存（非出征）。</summary>
         public Dictionary<string, int> ItemInventory = new Dictionary<string, int>();
 
-        public int ExpToNextRank => 40 + HunterRank * 25;
+        public int ExpToNextRank => 70 + HunterRank * 40;
 
         public static HunterProgress CreateNew()
         {
@@ -101,6 +101,24 @@ namespace MHIdle.Model
                     Maps[key] = new MapProgress { MapId = key };
                 }
             }
+
+            // 图鉴扩容后按猎人等级重同步解锁，避免旧存档下标错位
+            if (TotalKills > 0 || HunterRank > 1 || TotalLargeKills > 0)
+            {
+                int rankCap = HunterRank + 1;
+                for (int i = 0; i < GameDatabase.Monsters.Count; i++)
+                {
+                    if (GameDatabase.Monsters[i].Rank <= rankCap)
+                    {
+                        HighestMonsterIndexUnlocked = Mathf.Max(HighestMonsterIndexUnlocked, i);
+                    }
+                }
+            }
+
+            HighestMonsterIndexUnlocked = Mathf.Clamp(
+                HighestMonsterIndexUnlocked, 0, Mathf.Max(0, GameDatabase.Monsters.Count - 1));
+            CurrentMonsterIndex = Mathf.Clamp(
+                CurrentMonsterIndex, 0, HighestMonsterIndexUnlocked);
 
             foreach (var weapon in GameDatabase.Weapons)
             {
@@ -272,7 +290,7 @@ namespace MHIdle.Model
             if (weapon == null) return 1.5f;
             float interval = weapon.AttackInterval / progress.SpeedMultiplier;
             interval *= ArmorSkillSystem.Evaluate(this).AttackIntervalMul;
-            return Mathf.Max(0.5f, interval);
+            return Mathf.Max(CombatBalance.MinPlayerAttackInterval, interval);
         }
 
         public float GetChargeChance()

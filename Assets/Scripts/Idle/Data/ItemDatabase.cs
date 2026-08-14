@@ -14,18 +14,32 @@ namespace MHIdle.Data
 
     public enum ItemId
     {
-        Potion,          // 回复药
-        MegaPotion,      // 回复药大
-        WellDoneSteak,   // 熟肉（回血+临时HP）
-        Demondrug,       // 鬼人药
-        Armorskin,       // 硬化药
-        Lifepowder,      // 生命之粉
-        PitfallTrap,     // 落穴陷阱
-        ShockTrap,       // 麻痹陷阱
-        FlashBomb,       // 闪光弹
-        BarrelBomb,      // 大桶炸弹
-        TranqBomb,       // 麻醉球（出击掉落加成占位）
-        Paintball        // 追踪玉（地图经验微增占位）
+        Potion,
+        MegaPotion,
+        WellDoneSteak,
+        Antidote,
+        HerbalMedicine,
+        Nutrients,
+        MaxPotion,
+        AncientPotion,
+        Demondrug,
+        MegaDemondrug,
+        Armorskin,
+        MegaArmorskin,
+        MightSeed,
+        AdamantSeed,
+        DashJuice,
+        Lifepowder,
+        PitfallTrap,
+        ShockTrap,
+        FlashBomb,
+        SonicBomb,
+        BarrelBomb,
+        SmallBarrelBomb,
+        MegaBarrelBomb,
+        TranqBomb,
+        Paintball,
+        Farcaster
     }
 
     [Serializable]
@@ -41,19 +55,21 @@ namespace MHIdle.Data
         public Dictionary<MaterialId, int> CraftCost = new Dictionary<MaterialId, int>();
         public int CraftZenny;
 
-        // 效果参数
         public float HealAmount;
         public float HealPercent;
         public float AttackBuffMul = 1f;
         public float DefenseBuffMul = 1f;
+        public float AttackIntervalMul = 1f;
         public float BuffDuration;
         public float TrapImmobilizeSeconds;
         public float TrapDamage;
         public float BombDamage;
         public float FlashWeakenSeconds;
         public float FlashIncomingMul = 1f;
-        public bool ActiveHuntOnly; // 仅主动出击可用
-        public bool AutoUseInIdle;  // 挂机是否自动用
+        public bool BombNeedsImmobilize = true;
+        public bool PreventDeathPenalty;
+        public bool ActiveHuntOnly;
+        public bool AutoUseInIdle;
     }
 
     public static class ItemDatabase
@@ -107,6 +123,31 @@ namespace MHIdle.Data
                 },
                 new ItemDef
                 {
+                    Id = ItemId.Antidote,
+                    Name = "解毒药",
+                    Category = ItemCategory.Heal,
+                    Description = "挂机也可自动服用，回复 22 并压住毒伤。",
+                    MaxStack = 8,
+                    ShopPrice = 25,
+                    HealAmount = 22f,
+                    AutoUseInIdle = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.HerbalMedicine,
+                    Name = "药草",
+                    Category = ItemCategory.Heal,
+                    Description = "便宜续航，回复 48。",
+                    MaxStack = 10,
+                    ShopPrice = 45,
+                    UnlockHunterRank = 2,
+                    HealAmount = 48f,
+                    CraftZenny = 20,
+                    CraftCost = new Dictionary<MaterialId, int> { { MaterialId.MonsterHide, 1 } },
+                    AutoUseInIdle = true
+                },
+                new ItemDef
+                {
                     Id = ItemId.WellDoneSteak,
                     Name = "熟肉",
                     Category = ItemCategory.Heal,
@@ -115,6 +156,57 @@ namespace MHIdle.Data
                     ShopPrice = 50,
                     HealAmount = 45f,
                     AutoUseInIdle = false,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.Nutrients,
+                    Name = "营养剂",
+                    Category = ItemCategory.Heal,
+                    Description = "出击中段回复 55，偏续航。",
+                    MaxStack = 5,
+                    ShopPrice = 80,
+                    UnlockHunterRank = 3,
+                    HealAmount = 55f,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.MaxPotion,
+                    Name = "回复药·特大",
+                    Category = ItemCategory.Heal,
+                    Description = "危急时回复全部 HP。仅出击。",
+                    MaxStack = 2,
+                    ShopPrice = 280,
+                    UnlockHunterRank = 6,
+                    HealPercent = 1f,
+                    CraftZenny = 140,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.MonsterFluid, 2 },
+                        { MaterialId.WyvernGem, 1 }
+                    },
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.AncientPotion,
+                    Name = "古代秘药",
+                    Category = ItemCategory.Buff,
+                    Description = "开场回满并小幅提升攻防，持续整场。",
+                    MaxStack = 1,
+                    ShopPrice = 480,
+                    UnlockHunterRank = 10,
+                    HealPercent = 1f,
+                    AttackBuffMul = 1.08f,
+                    DefenseBuffMul = 1.08f,
+                    BuffDuration = 999f,
+                    CraftZenny = 220,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.ElderDragonBlood, 1 },
+                        { MaterialId.Plate, 1 }
+                    },
                     ActiveHuntOnly = true
                 },
                 new ItemDef
@@ -132,6 +224,25 @@ namespace MHIdle.Data
                 },
                 new ItemDef
                 {
+                    Id = ItemId.MegaDemondrug,
+                    Name = "鬼人药·G",
+                    Category = ItemCategory.Buff,
+                    Description = "出击开场提升攻击 18%，持续整场。",
+                    MaxStack = 2,
+                    ShopPrice = 260,
+                    UnlockHunterRank = 7,
+                    AttackBuffMul = 1.18f,
+                    BuffDuration = 999f,
+                    CraftZenny = 120,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.Fang, 2 },
+                        { MaterialId.MonsterFluid, 1 }
+                    },
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
                     Id = ItemId.Armorskin,
                     Name = "硬化药",
                     Category = ItemCategory.Buff,
@@ -141,6 +252,69 @@ namespace MHIdle.Data
                     UnlockHunterRank = 3,
                     DefenseBuffMul = 1.15f,
                     BuffDuration = 999f,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.MegaArmorskin,
+                    Name = "硬化药·G",
+                    Category = ItemCategory.Buff,
+                    Description = "出击开场提升防御 22%，持续整场。",
+                    MaxStack = 2,
+                    ShopPrice = 260,
+                    UnlockHunterRank = 7,
+                    DefenseBuffMul = 1.22f,
+                    BuffDuration = 999f,
+                    CraftZenny = 120,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.MonsterScale, 3 },
+                        { MaterialId.MonsterBone, 2 }
+                    },
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.MightSeed,
+                    Name = "怪力之种",
+                    Category = ItemCategory.Buff,
+                    Description = "便宜开场攻击 +8%。",
+                    MaxStack = 5,
+                    ShopPrice = 60,
+                    UnlockHunterRank = 2,
+                    AttackBuffMul = 1.08f,
+                    BuffDuration = 999f,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.AdamantSeed,
+                    Name = "忍耐之种",
+                    Category = ItemCategory.Buff,
+                    Description = "便宜开场防御 +10%。",
+                    MaxStack = 5,
+                    ShopPrice = 60,
+                    UnlockHunterRank = 2,
+                    DefenseBuffMul = 1.10f,
+                    BuffDuration = 999f,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.DashJuice,
+                    Name = "强走药",
+                    Category = ItemCategory.Buff,
+                    Description = "出击时攻速 +12%（缩短挥刀间隔）。",
+                    MaxStack = 3,
+                    ShopPrice = 180,
+                    UnlockHunterRank = 5,
+                    AttackIntervalMul = 0.88f,
+                    BuffDuration = 999f,
+                    CraftZenny = 80,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.MonsterFluid, 2 }
+                    },
                     ActiveHuntOnly = true
                 },
                 new ItemDef
@@ -214,6 +388,34 @@ namespace MHIdle.Data
                 },
                 new ItemDef
                 {
+                    Id = ItemId.SonicBomb,
+                    Name = "音爆弹",
+                    Category = ItemCategory.Tool,
+                    Description = "短眩晕 3.2s，受伤降至 78%。CD 略长。",
+                    MaxStack = 5,
+                    ShopPrice = 70,
+                    UnlockHunterRank = 3,
+                    FlashWeakenSeconds = 3.2f,
+                    FlashIncomingMul = 0.78f,
+                    ActiveHuntOnly = true,
+                    CraftZenny = 40,
+                    CraftCost = new Dictionary<MaterialId, int> { { MaterialId.MonsterScale, 1 } }
+                },
+                new ItemDef
+                {
+                    Id = ItemId.SmallBarrelBomb,
+                    Name = "小桶炸弹",
+                    Category = ItemCategory.Bomb,
+                    Description = "无需定身即可引爆，伤害 36。CD≈18s。",
+                    MaxStack = 4,
+                    ShopPrice = 70,
+                    UnlockHunterRank = 2,
+                    BombDamage = 36f,
+                    BombNeedsImmobilize = false,
+                    ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
                     Id = ItemId.BarrelBomb,
                     Name = "大桶炸弹",
                     Category = ItemCategory.Bomb,
@@ -228,6 +430,25 @@ namespace MHIdle.Data
                     {
                         { MaterialId.MonsterBone, 2 },
                         { MaterialId.SharpClaw, 1 }
+                    }
+                },
+                new ItemDef
+                {
+                    Id = ItemId.MegaBarrelBomb,
+                    Name = "大桶炸弹·G",
+                    Category = ItemCategory.Bomb,
+                    Description = "定身窗口内高爆 128；睡眠 Build 加成。CD≈20s。",
+                    MaxStack = 1,
+                    ShopPrice = 320,
+                    UnlockHunterRank = 8,
+                    BombDamage = 128f,
+                    ActiveHuntOnly = true,
+                    CraftZenny = 160,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.Fang, 2 },
+                        { MaterialId.MonsterFluid, 2 },
+                        { MaterialId.SharpClaw, 2 }
                     }
                 },
                 new ItemDef
@@ -250,6 +471,24 @@ namespace MHIdle.Data
                     MaxStack = 10,
                     ShopPrice = 25,
                     ActiveHuntOnly = true
+                },
+                new ItemDef
+                {
+                    Id = ItemId.Farcaster,
+                    Name = "返还烟",
+                    Category = ItemCategory.Tool,
+                    Description = "讨伐濒死时自动使用，免一次死亡惩罚并回营。",
+                    MaxStack = 2,
+                    ShopPrice = 220,
+                    UnlockHunterRank = 4,
+                    PreventDeathPenalty = true,
+                    ActiveHuntOnly = true,
+                    CraftZenny = 100,
+                    CraftCost = new Dictionary<MaterialId, int>
+                    {
+                        { MaterialId.Webbing, 2 },
+                        { MaterialId.MonsterHide, 2 }
+                    }
                 }
             };
         }

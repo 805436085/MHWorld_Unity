@@ -737,6 +737,7 @@ namespace MHIdle.UI
                 string buff = string.Empty;
                 if (combat.ItemState.AttackBuffMul > 1.01f) buff += " 鬼人";
                 if (combat.ItemState.DefenseBuffMul > 1.01f) buff += " 硬化";
+                if (combat.ItemState.AttackIntervalMul < 0.99f) buff += " 强走";
                 if (combat.ItemState.ImmobilizeTimer > 0f) buff += $" 定身{combat.ItemState.ImmobilizeTimer:0.0}s";
                 if (combat.ItemState.FlashTimer > 0f) buff += " 闪光";
                 if (!string.IsNullOrEmpty(buff))

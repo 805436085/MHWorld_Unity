@@ -19,14 +19,31 @@ namespace MHIdle.Systems
             float hp = progress.GetPlayerMaxHp();
 
             // 预估携带增益药
-            if (progress.GetLoadoutCount(ItemId.Demondrug) > 0) atk *= 1.12f;
-            if (progress.GetLoadoutCount(ItemId.Armorskin) > 0) def *= 1.15f;
+            if (progress.GetLoadoutCount(ItemId.MegaDemondrug) > 0) atk *= 1.18f;
+            else if (progress.GetLoadoutCount(ItemId.Demondrug) > 0) atk *= 1.12f;
+            else if (progress.GetLoadoutCount(ItemId.MightSeed) > 0) atk *= 1.08f;
+
+            if (progress.GetLoadoutCount(ItemId.MegaArmorskin) > 0) def *= 1.22f;
+            else if (progress.GetLoadoutCount(ItemId.Armorskin) > 0) def *= 1.15f;
+            else if (progress.GetLoadoutCount(ItemId.AdamantSeed) > 0) def *= 1.10f;
+
+            if (progress.GetLoadoutCount(ItemId.AncientPotion) > 0)
+            {
+                atk *= 1.08f;
+                def *= 1.08f;
+            }
+
+            float interval = progress.GetAttackInterval();
+            if (progress.GetLoadoutCount(ItemId.DashJuice) > 0) interval *= 0.88f;
+
             if (progress.GetLoadoutCount(ItemId.PitfallTrap) > 0 || progress.GetLoadoutCount(ItemId.ShockTrap) > 0)
                 atk *= 1.06f;
-            if (progress.GetLoadoutCount(ItemId.BarrelBomb) > 0) atk *= 1.04f;
+            if (progress.GetLoadoutCount(ItemId.MegaBarrelBomb) > 0) atk *= 1.06f;
+            else if (progress.GetLoadoutCount(ItemId.BarrelBomb) > 0) atk *= 1.04f;
+            else if (progress.GetLoadoutCount(ItemId.SmallBarrelBomb) > 0) atk *= 1.02f;
 
-            float playerDps = atk / Mathf.Max(0.55f, progress.GetAttackInterval());
-            float monsterDps = Mathf.Max(1f, monster.Attack - def * 0.35f) / 2.2f;
+            float playerDps = atk / Mathf.Max(CombatBalance.MinPlayerAttackInterval, interval);
+            float monsterDps = Mathf.Max(1f, monster.Attack - def * 0.35f) / CombatBalance.MonsterAttackInterval;
 
             float timeToKill = monster.MaxHp / Mathf.Max(1f, playerDps);
             float timeToDie = hp / Mathf.Max(0.5f, monsterDps);
