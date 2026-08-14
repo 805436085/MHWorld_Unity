@@ -39,7 +39,6 @@ namespace MHIdle.Systems
         float _itemTickTimer;
         System.Random _rng = new System.Random();
 
-        const float MonsterAttackInterval = 2.2f;
         const int MaxLogs = 10;
 
         public void Initialize(HunterProgress progress)
@@ -150,7 +149,7 @@ namespace MHIdle.Systems
                 }
             }
 
-            float playerInterval = Progress.GetAttackInterval();
+            float playerInterval = Progress.GetAttackInterval() * Mathf.Max(0.7f, ItemState.AttackIntervalMul);
             if (_playerAttackTimer >= playerInterval)
             {
                 _playerAttackTimer -= playerInterval;
@@ -158,9 +157,9 @@ namespace MHIdle.Systems
             }
 
             bool monsterCanAct = ItemState.ImmobilizeTimer <= 0f;
-            if (monsterCanAct && MonsterHp > 0f && _monsterAttackTimer >= MonsterAttackInterval)
+            if (monsterCanAct && MonsterHp > 0f && _monsterAttackTimer >= CombatBalance.MonsterAttackInterval)
             {
-                _monsterAttackTimer -= MonsterAttackInterval;
+                _monsterAttackTimer -= CombatBalance.MonsterAttackInterval;
                 MonsterAttack();
             }
 
@@ -270,22 +269,46 @@ namespace MHIdle.Systems
             {
                 if (Mode == CombatMode.ActiveHunt)
                 {
-                    string penalty = HuntSystem.ApplyDeathPenalty(Progress, _rng);
-                    LastRewardSummary = penalty;
-                    AddLog(penalty);
-                    AddLog("讨伐失败，返回营地…");
-                    IsRunning = false;
-                    SaveSystem.Save(Progress);
+                    if (TryUseFarcaster())
+                    {
+                        LastRewardSummary = "使用返还烟，紧急回营（免惩罚）";
+                        AddLog(LastRewardSummary);
+                        IsRunning = false;
+                        SaveSystem.Save(Progress);
+                    }
+                    else
+                    {
+                        string penalty = HuntSystem.ApplyDeathPenalty(Progress, _rng);
+                        LastRewardSummary = penalty;
+                        AddLog(penalty);
+                        AddLog("讨伐失败，返回营地…");
+                        IsRunning = false;
+                        SaveSystem.Save(Progress);
+                    }
                 }
                 else
                 {
                     AddLog("挂机被打倒，短暂休整后继续…");
                     RefreshPlayerVitals(true);
                     MonsterHp = CurrentMonster.MaxHp;
-                    _playerAttackTimer = 0f;
-                    _monsterAttackTimer = 0.6f;
+                    _playerAttackTimer = -CombatBalance.IdlePackDelay;
+                    _monsterAttackTimer = CombatBalance.IdleDownedMonsterDelay;
                 }
             }
+        }
+
+        bool TryUseFarcaster()
+        {
+            foreach (var def in ItemDatabase.All)
+            {
+                if (!def.PreventDeathPenalty) continue;
+                if (Progress.GetLoadoutCount(def.Id) <= 0) continue;
+                if (!ItemSystem.ConsumeFromLoadout(Progress, def.Id)) continue;
+                PlayerHp = Progress.GetPlayerMaxHp() * 0.45f;
+                return true;
+            }
+
+            return false;
         }
 
         void OnMonsterDefeated()
@@ -373,7 +396,7 @@ namespace MHIdle.Systems
                 if (next <= Progress.HighestMonsterIndexUnlocked &&
                     next < GameDatabase.Monsters.Count &&
                     GameDatabase.Monsters[next].Size == MonsterSize.Small &&
-                    Progress.GetPlayerAttack() > CurrentMonster.MaxHp * 0.4f)
+                    Progress.GetPlayerAttack() > CurrentMonster.MaxHp * CombatBalance.IdleAdvanceAttackToHp)
                 {
                     Progress.CurrentMonsterIndex = next;
                     BindMonster(next);
@@ -384,6 +407,8 @@ namespace MHIdle.Systems
                     MonsterHp = CurrentMonster.MaxHp;
                 }
 
+                _playerAttackTimer = -CombatBalance.IdlePackDelay;
+                _monsterAttackTimer = CombatBalance.IdlePackDelay * 0.4f;
                 RefreshPlayerVitals(true);
             }
 
@@ -418,7 +443,7 @@ namespace MHIdle.Systems
             CurrentMonster = GameDatabase.GetMonsterByIndex(index);
             MonsterHp = CurrentMonster.MaxHp;
             _playerAttackTimer = 0f;
-            _monsterAttackTimer = 0.8f;
+            _monsterAttackTimer = 1.2f;
         }
 
         void RefreshPlayerVitals(bool healFull)
@@ -443,7 +468,13 @@ namespace MHIdle.Systems
                 case MaterialId.MonsterBone: return "怪兽骨";
                 case MaterialId.MonsterHide: return "兽皮";
                 case MaterialId.SharpClaw: return "锐利爪";
+                case MaterialId.MonsterScale: return "鳞";
+                case MaterialId.Fang: return "牙";
+                case MaterialId.MonsterFluid: return "体液";
+                case MaterialId.Webbing: return "翼膜";
+                case MaterialId.Horn: return "角";
                 case MaterialId.WyvernGem: return "龙玉";
+                case MaterialId.Plate: return "逆鳞";
                 case MaterialId.ElderDragonBlood: return "古龙之血";
                 default: return id.ToString();
             }

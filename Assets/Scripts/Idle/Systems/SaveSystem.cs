@@ -28,6 +28,7 @@ namespace MHIdle.Systems
         public List<string> UnlockedTechniques = new List<string>();
         public List<MaterialEntry> Loadout = new List<MaterialEntry>();
         public List<MaterialEntry> ItemInventory = new List<MaterialEntry>();
+        public string SelectedPlaystyleId;
     }
 
     [Serializable]
@@ -90,7 +91,8 @@ namespace MHIdle.Systems
                 TotalKills = progress.TotalKills,
                 TotalLargeKills = progress.TotalLargeKills,
                 HuntDeaths = progress.HuntDeaths,
-                LastSaveUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                LastSaveUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                SelectedPlaystyleId = progress.SelectedPlaystyleId
             };
             progress.LastSaveUnix = data.LastSaveUnix;
 
@@ -168,7 +170,8 @@ namespace MHIdle.Systems
                     TotalKills = Mathf.Max(0, data.TotalKills),
                     TotalLargeKills = Mathf.Max(0, data.TotalLargeKills),
                     HuntDeaths = Mathf.Max(0, data.HuntDeaths),
-                    LastSaveUnix = data.LastSaveUnix
+                    LastSaveUnix = data.LastSaveUnix,
+                    SelectedPlaystyleId = data.SelectedPlaystyleId
                 };
 
                 foreach (var entry in data.Materials) progress.Materials[entry.Id] = entry.Amount;

@@ -121,10 +121,21 @@ namespace MHIdle.Systems
                 if (info.Skill == SkillId.Paralysis) fx.HasParalysis = true;
             }
 
+            PlaystyleSystem.ApplyTo(fx, progress);
+
             fx.CritChance = Mathf.Clamp01(fx.CritChance);
             fx.StatusChance = Mathf.Clamp01(fx.StatusChance);
             fx.TrapChanceBonus = Mathf.Clamp01(fx.TrapChanceBonus);
             return fx;
+        }
+
+        public static string DescribeBuildFocus(HunterProgress progress)
+        {
+            var def = PlaystyleSystem.Current(progress);
+            int pieces = PlaystyleSystem.EquippedSetPieces(progress, def);
+            if (pieces >= 3) return $"流派：{def.Name}（套装成型 {pieces}/4）";
+            if (pieces > 0) return $"流派：{def.Name}（防具 {pieces}/4）";
+            return $"流派：{def.Name}（点选切换）";
         }
 
         public static string DescribeBuildFocus(SkillCombatEffects fx)
@@ -132,6 +143,7 @@ namespace MHIdle.Systems
             if (fx.ActiveTiers.Count == 0) return "未激活技能 · 凑齐防具点数可形成 Build";
 
             // 粗略流派标签
+            if (fx.IncomingDamageMul <= 0.88f && fx.CritChance >= 0.08f) return "流派：回避会心";
             if (fx.HasSleep && fx.ChargeChanceBonus > 0f) return "流派：睡眠暴力一刀";
             if (fx.HasParalysis) return "流派：麻痹持续输出";
             if (fx.HasPoison && fx.StatusChance > 0.1f) return "流派：毒异常压制";

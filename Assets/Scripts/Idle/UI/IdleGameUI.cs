@@ -208,6 +208,56 @@ namespace MHIdle.UI
             GUI.backgroundColor = old;
         }
 
+        void DrawPlaystylePicker(IdleGameManager manager, HunterProgress progress)
+        {
+            var current = PlaystyleSystem.Current(progress);
+            int equipped = PlaystyleSystem.EquippedSetPieces(progress, current);
+            int owned = PlaystyleSystem.OwnedSetPieces(progress, current);
+
+            GUILayout.BeginVertical(_boxStyle);
+            GUILayout.Label("选择流派", _headerStyle);
+            GUILayout.Label("点选切换；立即获得流派特化，防具/道具会进一步加强。", _smallStyle);
+
+            int i = 0;
+            foreach (var def in PlaystyleDatabase.All)
+            {
+                if (i % 3 == 0)
+                {
+                    if (i > 0) GUILayout.EndHorizontal();
+                    GUILayout.BeginHorizontal();
+                }
+
+                bool selected = def.Id == current.Id;
+                bool unlocked = PlaystyleSystem.IsUnlocked(progress, def);
+                var old = GUI.backgroundColor;
+                if (selected) GUI.backgroundColor = new Color(0.9f, 0.72f, 0.35f, 1f);
+                else if (!unlocked) GUI.backgroundColor = new Color(0.16f, 0.16f, 0.18f, 1f);
+                else GUI.backgroundColor = new Color(0.22f, 0.24f, 0.26f, 1f);
+
+                GUI.enabled = unlocked || selected;
+                string label = unlocked ? def.ShortName : $"{def.ShortName}\nHR{def.UnlockHunterRank}";
+                if (GUILayout.Button(label, GUILayout.Height(36f * _uiScale)))
+                    manager.SelectPlaystyle(def.Id);
+                GUI.enabled = true;
+                GUI.backgroundColor = old;
+                i++;
+            }
+
+            if (i > 0) GUILayout.EndHorizontal();
+
+            GUILayout.Space(4f * _uiScale);
+            GUILayout.Label($"当前：{current.Name}", _headerStyle);
+            GUILayout.Label(current.Description, _smallStyle);
+            GUILayout.Label(
+                $"推荐 {current.RecommendedGear} · 武器 {current.RecommendedWeapons} · 已有 {owned} 件 / 穿戴 {equipped}/4",
+                _smallStyle);
+
+            if (GUILayout.Button("一键装配推荐防具和道具", GUILayout.Height(30f * _uiScale)))
+                manager.EquipPlaystyleGear();
+
+            GUILayout.EndVertical();
+        }
+
         // ——— 第 1 页：角色 ———
         void DrawHunterPage(IdleGameManager manager, IdleCombatSystem combat, HunterProgress progress)
         {
@@ -220,6 +270,9 @@ namespace MHIdle.UI
             GUILayout.EndVertical();
 
             GUILayout.Space(6f * _uiScale);
+            DrawPlaystylePicker(manager, progress);
+
+            GUILayout.Space(6f * _uiScale);
             GUILayout.BeginVertical(_boxStyle);
             GUILayout.Label("当前装备", _headerStyle);
             GUILayout.BeginHorizontal();
@@ -229,6 +282,8 @@ namespace MHIdle.UI
             GUILayout.Label(
                 $"{ProficiencyNaming.LevelLabel(ProficiencyNaming.Weapon, wp.Outer.Level)}  攻 {progress.GetPlayerAttack():0.0}  防 {progress.GetTotalDefense():0.0}",
                 _smallStyle);
+            if (wp.IsProficiencyLocked)
+                GUILayout.Label(ProficiencyNaming.BottleneckHint, _smallStyle);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
 
@@ -245,8 +300,6 @@ namespace MHIdle.UI
             GUILayout.EndHorizontal();
 
             GUILayout.Space(6f * _uiScale);
-            var skillFx = progress.GetSkillEffects();
-            GUILayout.Label(ArmorSkillSystem.DescribeBuildFocus(skillFx), _headerStyle);
             var board = ArmorSkillSystem.GetSkillBoard(progress);
             if (board.Count == 0)
             {
@@ -396,7 +449,7 @@ namespace MHIdle.UI
                 styleRing,
                 new Color(0.78f, 0.62f, 0.42f));
 
-            if (wp.Outer.Level % 5 == 0 && !wp.BottleneckBroken)
+            if (wp.IsProficiencyLocked)
             {
                 GUILayout.Space(4f * _uiScale);
                 GUILayout.BeginVertical(_boxStyle);
@@ -724,10 +777,10 @@ namespace MHIdle.UI
             GUILayout.BeginArea(new Rect(panel.x + 12f * _uiScale, panel.y + 12f * _uiScale, panel.width - 24f * _uiScale, panel.height - 24f * _uiScale));
 
             var m = combat.CurrentMonster;
+            float rate = HuntSystem.EstimateWinRate(progress, m);
             GUILayout.Label("讨伐", _titleStyle);
             GUILayout.Label($"{m.Name} · {m.Locale}", _labelStyle);
-            float rate = HuntSystem.EstimateWinRate(progress, m);
-            GUILayout.Label(HuntSystem.FormatWinRate(rate), _smallStyle);
+            GUILayout.Label($"流派 {PlaystyleSystem.Current(progress).Name}  ·  {HuntSystem.FormatWinRate(rate)}", _smallStyle);
             GUILayout.Space(6f * _uiScale);
             DrawBar("猎人", combat.PlayerHp, progress.GetPlayerMaxHp(), new Color(0.35f, 0.75f, 0.45f));
             DrawBar("怪物", combat.MonsterHp, m.MaxHp, new Color(0.85f, 0.35f, 0.3f));
@@ -737,6 +790,7 @@ namespace MHIdle.UI
                 string buff = string.Empty;
                 if (combat.ItemState.AttackBuffMul > 1.01f) buff += " 鬼人";
                 if (combat.ItemState.DefenseBuffMul > 1.01f) buff += " 硬化";
+                if (combat.ItemState.AttackIntervalMul < 0.99f) buff += " 强走";
                 if (combat.ItemState.ImmobilizeTimer > 0f) buff += $" 定身{combat.ItemState.ImmobilizeTimer:0.0}s";
                 if (combat.ItemState.FlashTimer > 0f) buff += " 闪光";
                 if (!string.IsNullOrEmpty(buff))

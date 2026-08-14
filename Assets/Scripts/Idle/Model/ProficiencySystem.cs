@@ -11,21 +11,41 @@ namespace MHIdle.Model
         public int Level = 1;
         public int Exp;
 
-        public int ExpToNext => 25 + Level * 18;
+        public int ExpToNext => 42 + Level * 26;
 
-        public bool AddExp(int amount)
+        /// <summary>
+        /// 增加经验。maxLevel &gt; 0 时最多升到该级（满环停住，用于专精瓶颈锁定）。
+        /// </summary>
+        public bool AddExp(int amount, int maxLevel = 0)
         {
             if (amount <= 0) return false;
             Exp += amount;
             bool leveled = false;
             while (Exp >= ExpToNext)
             {
+                if (maxLevel > 0 && Level >= maxLevel)
+                {
+                    Exp = ExpToNext;
+                    break;
+                }
+
                 Exp -= ExpToNext;
                 Level++;
                 leveled = true;
+
+                if (maxLevel > 0 && Level >= maxLevel)
+                {
+                    if (Exp > ExpToNext) Exp = ExpToNext;
+                    break;
+                }
             }
 
             return leveled;
+        }
+
+        public void FillRing()
+        {
+            Exp = ExpToNext;
         }
 
         public float Fill01 => ExpToNext <= 0 ? 0f : Mathf.Clamp01((float)Exp / ExpToNext);
@@ -56,8 +76,11 @@ namespace MHIdle.Model
 
         public bool AddExp(int amount) => Outer.AddExp(amount);
 
-        public float DamageMultiplier => 1f + (Outer.Level - 1) * 0.035f;
-        public float SpeedMultiplier => 1f + (Outer.Level - 1) * 0.012f;
+        public float DamageMultiplier => 1f + (Outer.Level - 1) * 0.028f;
+        public float SpeedMultiplier => 1f + (Outer.Level - 1) * 0.006f;
+
+        public bool IsProficiencyLocked =>
+            ProficiencySystem.IsBottleneckLevel(Outer.Level) && !BottleneckBroken;
     }
 
     [Serializable]
@@ -82,8 +105,21 @@ namespace MHIdle.Model
     {
         // 经验分配比例：专精为主，武种/心法较慢
         const float OuterRatio = 1f;
-        const float TypeRatio = 0.45f;
-        const float StyleRatio = 0.2f;
+        const float TypeRatio = 0.35f;
+        const float StyleRatio = 0.12f;
+
+        public static bool IsBottleneckLevel(int level) => level > 0 && level % 5 == 0;
+
+        /// <summary>专精最多升到这一级：未讨伐大怪时不能越过 5/10/15… 关口。</summary>
+        public static int ProficiencyCapLevel(WeaponProgress weaponProgress)
+        {
+            int level = weaponProgress.Outer.Level;
+            if (IsBottleneckLevel(level) && !weaponProgress.BottleneckBroken)
+                return level;
+            if (IsBottleneckLevel(level))
+                return level + 5;
+            return (level / 5 + 1) * 5;
+        }
 
         public static List<string> GrantCombatExp(
             HunterProgress progress,
@@ -102,30 +138,32 @@ namespace MHIdle.Model
             int typeGain = Mathf.Max(1, Mathf.RoundToInt(baseExp * TypeRatio));
             int styleGain = Mathf.Max(1, Mathf.RoundToInt(baseExp * StyleRatio));
 
-            // 小怪：若专精卡在瓶颈点（每 5 级）且未破，则专精收益大幅衰减
-            bool atBottleneck = weaponProgress.Outer.Level > 0 &&
-                               weaponProgress.Outer.Level % 5 == 0 &&
-                               !weaponProgress.BottleneckBroken;
+            bool locked = weaponProgress.IsProficiencyLocked;
 
-            if (size == MonsterSize.Small && atBottleneck)
-            {
-                outerGain = Mathf.Max(1, outerGain / 5);
-                notes.Add(ProficiencyNaming.BottleneckIdleNote);
-            }
-
-            if (size == MonsterSize.Large && atBottleneck)
+            if (size == MonsterSize.Large && locked)
             {
                 weaponProgress.BottleneckBroken = true;
                 outerGain = Mathf.RoundToInt(outerGain * 1.8f);
                 notes.Add(ProficiencyNaming.BottleneckBrokenNote);
             }
-
-            // 过了瓶颈后，升到下一级重置瓶颈标记，等待下一个 5 级门槛
-            int oldOuter = weaponProgress.Outer.Level;
-            if (weaponProgress.Outer.AddExp(outerGain) && weaponProgress.Outer.Level / 5 > oldOuter / 5)
+            else if (size != MonsterSize.Large && locked)
             {
-                weaponProgress.BottleneckBroken = false;
+                outerGain = 0;
+                weaponProgress.Outer.FillRing();
+                notes.Add(ProficiencyNaming.BottleneckIdleNote);
             }
+
+            int oldOuter = weaponProgress.Outer.Level;
+            int cap = ProficiencyCapLevel(weaponProgress);
+            if (weaponProgress.Outer.AddExp(outerGain, cap) && weaponProgress.Outer.Level > oldOuter)
+            {
+                // 离开本段瓶颈后，下一关必须再打大怪
+                if (IsBottleneckLevel(oldOuter) || IsBottleneckLevel(weaponProgress.Outer.Level))
+                    weaponProgress.BottleneckBroken = false;
+            }
+
+            if (weaponProgress.IsProficiencyLocked)
+                weaponProgress.Outer.FillRing();
 
             var typeKey = weapon.Type.ToString();
             var styleKey = WeaponTaxonomy.GetStyleGroup(weapon.Type).ToString();

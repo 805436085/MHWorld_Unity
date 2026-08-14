@@ -39,7 +39,13 @@ namespace MHIdle.Data
         MonsterBone,
         MonsterHide,
         SharpClaw,
+        MonsterScale,
+        Fang,
+        MonsterFluid,
+        Webbing,
+        Horn,
         WyvernGem,
+        Plate,
         ElderDragonBlood
     }
 
@@ -56,7 +62,10 @@ namespace MHIdle.Data
         Desert,           // 沙漠
         Swamp,            // 沼泽
         Volcano,          // 火山
-        SnowyMountains    // 雪山
+        SnowyMountains,   // 雪山
+        GreatForest,      // 树海
+        Gorge,            // 溪谷
+        Tower             // 塔
     }
 
     public enum TechniqueId
@@ -67,6 +76,20 @@ namespace MHIdle.Data
         LsSpiritBlade,
         LsFadeSlash,
         DbDemonMode,
-        SnSGuardSlash
+        DbDemonDance,
+        SnSGuardSlash,
+        SnSRoundSlash,
+        HmCharge,
+        HmUpswing,
+        HhRecital,
+        HhEncore,
+        LnCounter,
+        LnCharge,
+        GlBurst,
+        GlWyrmstake,
+        BowPowerShot,
+        BowDragonPiercer,
+        LbgRapidFire,
+        HbgSiege
     }
 }

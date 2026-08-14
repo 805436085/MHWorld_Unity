@@ -126,6 +126,7 @@ namespace MHIdle.Systems
     {
         public float AttackBuffMul = 1f;
         public float DefenseBuffMul = 1f;
+        public float AttackIntervalMul = 1f;
         public float FlashTimer;
         public float FlashIncomingMul = 1f;
         public float ImmobilizeTimer;
@@ -142,6 +143,7 @@ namespace MHIdle.Systems
         {
             AttackBuffMul = 1f;
             DefenseBuffMul = 1f;
+            AttackIntervalMul = 1f;
             FlashTimer = 0f;
             FlashIncomingMul = 1f;
             ImmobilizeTimer = 0f;
@@ -175,9 +177,37 @@ namespace MHIdle.Systems
 
             var skills = ArmorSkillSystem.Evaluate(progress);
 
-            // 开场 buff
-            TryUseBuff(progress, state, ItemId.Demondrug, skills);
-            TryUseBuff(progress, state, ItemId.Armorskin, skills);
+            ItemDef bestAttack = null;
+            ItemDef bestDefense = null;
+            ItemDef dash = null;
+            ItemDef ancient = null;
+            foreach (var def in ItemDatabase.All)
+            {
+                if (def.Category != ItemCategory.Buff) continue;
+                if (progress.GetLoadoutCount(def.Id) <= 0) continue;
+                if (def.Id == ItemId.AncientPotion) ancient = def;
+                if (def.AttackBuffMul > 1.001f &&
+                    (bestAttack == null || def.AttackBuffMul > bestAttack.AttackBuffMul))
+                    bestAttack = def;
+                if (def.DefenseBuffMul > 1.001f &&
+                    (bestDefense == null || def.DefenseBuffMul > bestDefense.DefenseBuffMul))
+                    bestDefense = def;
+                if (def.AttackIntervalMul < 0.999f) dash = def;
+            }
+
+            if (ancient != null)
+            {
+                TryUseBuff(progress, state, ancient.Id, skills);
+            }
+            else
+            {
+                if (bestAttack != null) TryUseBuff(progress, state, bestAttack.Id, skills);
+                if (bestDefense != null && bestDefense != bestAttack)
+                    TryUseBuff(progress, state, bestDefense.Id, skills);
+            }
+
+            if (dash != null && dash != ancient && dash != bestAttack && dash != bestDefense)
+                TryUseBuff(progress, state, dash.Id, skills);
 
             if (progress.GetLoadoutCount(ItemId.Paintball) > 0 &&
                 ItemSystem.ConsumeFromLoadout(progress, ItemId.Paintball))
@@ -186,7 +216,6 @@ namespace MHIdle.Systems
                 state.LastItemLog = "使用追踪玉";
             }
 
-            // 麻醉球：本场可用次数
             state.TranqBonusUses = progress.GetLoadoutCount(ItemId.TranqBomb);
         }
 
@@ -205,6 +234,11 @@ namespace MHIdle.Systems
 
             state.AttackBuffMul *= def.AttackBuffMul;
             state.DefenseBuffMul *= def.DefenseBuffMul;
+            state.AttackIntervalMul *= def.AttackIntervalMul;
+            if (def.HealPercent > 0f || def.HealAmount > 0f)
+            {
+                // 古代秘药等：开场也回血，由下次 Tick 的满血开场覆盖；这里记日志即可
+            }
             state.UsedOpeningBuffs = true;
             state.LastItemLog = $"服用 {def.Name}";
         }
@@ -224,11 +258,16 @@ namespace MHIdle.Systems
             var skills = ArmorSkillSystem.Evaluate(progress);
             float itemPower = 1f + (skills.HealOnKill >= 8f ? 0.15f : 0f) + (skills.HealOnKill >= 16f ? 0.1f : 0f);
 
-            // 回血
+            // 回血：危急优先特大/大回复，其次普通药与续航
             if (state.HealCooldown <= 0f)
             {
                 float hpRatio = playerMaxHp <= 0f ? 1f : playerHp / playerMaxHp;
-                if (hpRatio < ItemBalance.HealHpMega &&
+                if (mode == CombatMode.ActiveHunt && hpRatio < 0.22f &&
+                    TryHeal(progress, state, ItemId.MaxPotion, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                {
+                    state.HealCooldown = ItemBalance.HealCooldownMax;
+                }
+                else if (hpRatio < ItemBalance.HealHpMega &&
                     TryHeal(progress, state, ItemId.MegaPotion, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
                     state.HealCooldown = ItemBalance.HealCooldownMega;
@@ -238,10 +277,25 @@ namespace MHIdle.Systems
                 {
                     state.HealCooldown = ItemBalance.HealCooldownPotion;
                 }
+                else if (hpRatio < 0.38f &&
+                         TryHeal(progress, state, ItemId.HerbalMedicine, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                {
+                    state.HealCooldown = ItemBalance.HealCooldownHerb;
+                }
+                else if (hpRatio < 0.32f &&
+                         TryHeal(progress, state, ItemId.Antidote, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                {
+                    state.HealCooldown = ItemBalance.HealCooldownPotion;
+                }
                 else if (mode == CombatMode.ActiveHunt && hpRatio < ItemBalance.HealHpPowder &&
                          TryHeal(progress, state, ItemId.Lifepowder, ref playerHp, playerMaxHp, itemPower, mode, logs))
                 {
                     state.HealCooldown = ItemBalance.HealCooldownPowder;
+                }
+                else if (mode == CombatMode.ActiveHunt && hpRatio < 0.58f &&
+                         TryHeal(progress, state, ItemId.Nutrients, ref playerHp, playerMaxHp, itemPower, mode, logs))
+                {
+                    state.HealCooldown = ItemBalance.HealCooldownSteak;
                 }
                 else if (mode == CombatMode.ActiveHunt && hpRatio < ItemBalance.HealHpSteak &&
                          TryHeal(progress, state, ItemId.WellDoneSteak, ref playerHp, playerMaxHp, itemPower, mode, logs))
@@ -252,17 +306,15 @@ namespace MHIdle.Systems
 
             if (mode != CombatMode.ActiveHunt) return;
 
-            // 闪光弹：血少时保命
             if (state.FlashCooldown <= 0f && state.FlashTimer <= 0f &&
                 playerHp / playerMaxHp < ItemBalance.FlashHpTrigger)
             {
-                if (TryFlash(progress, state, logs))
-                {
+                if (TryFlash(progress, state, ItemId.FlashBomb, logs))
                     state.FlashCooldown = ItemBalance.FlashCooldown;
-                }
+                else if (TryFlash(progress, state, ItemId.SonicBomb, logs))
+                    state.FlashCooldown = ItemBalance.SonicCooldown;
             }
 
-            // 陷阱：CD 到了且怪物还活着
             if (state.TrapCooldown <= 0f && state.ImmobilizeTimer <= 0f && monsterHp > 0f)
             {
                 if (TryTrap(progress, state, ItemId.ShockTrap, ref monsterHp, skills, logs) ||
@@ -272,15 +324,14 @@ namespace MHIdle.Systems
                 }
             }
 
-            // 炸弹：仅在定身窗口中丢，避免浪费
-            if (state.BombCooldown <= 0f &&
-                state.ImmobilizeTimer > ItemBalance.BombImmobilizeWindow &&
-                monsterHp > 0f)
+            if (state.BombCooldown <= 0f && monsterHp > 0f)
             {
-                if (TryBomb(progress, state, ref monsterHp, skills, logs))
-                {
+                if (TryBomb(progress, state, ItemId.MegaBarrelBomb, ref monsterHp, skills, logs))
+                    state.BombCooldown = ItemBalance.MegaBombCooldown;
+                else if (TryBomb(progress, state, ItemId.BarrelBomb, ref monsterHp, skills, logs))
                     state.BombCooldown = ItemBalance.BombCooldown;
-                }
+                else if (TryBomb(progress, state, ItemId.SmallBarrelBomb, ref monsterHp, skills, logs))
+                    state.BombCooldown = ItemBalance.SmallBombCooldown;
             }
         }
 
@@ -297,8 +348,7 @@ namespace MHIdle.Systems
             var def = ItemDatabase.Get(id);
             if (def == null) return false;
             if (def.ActiveHuntOnly && mode != CombatMode.ActiveHunt) return false;
-            if (!def.AutoUseInIdle && mode == CombatMode.IdleSmall && id != ItemId.Potion && id != ItemId.MegaPotion)
-                return false;
+            if (mode == CombatMode.IdleSmall && !def.AutoUseInIdle) return false;
             if (progress.GetLoadoutCount(id) <= 0) return false;
             if (!ItemSystem.ConsumeFromLoadout(progress, id)) return false;
 
@@ -310,11 +360,12 @@ namespace MHIdle.Systems
             return true;
         }
 
-        static bool TryFlash(HunterProgress progress, CombatItemState state, List<string> logs)
+        static bool TryFlash(HunterProgress progress, CombatItemState state, ItemId id, List<string> logs)
         {
-            var def = ItemDatabase.Get(ItemId.FlashBomb);
-            if (progress.GetLoadoutCount(ItemId.FlashBomb) <= 0) return false;
-            if (!ItemSystem.ConsumeFromLoadout(progress, ItemId.FlashBomb)) return false;
+            var def = ItemDatabase.Get(id);
+            if (def == null) return false;
+            if (progress.GetLoadoutCount(id) <= 0) return false;
+            if (!ItemSystem.ConsumeFromLoadout(progress, id)) return false;
 
             state.FlashTimer = def.FlashWeakenSeconds;
             state.FlashIncomingMul = def.FlashIncomingMul;
@@ -351,13 +402,17 @@ namespace MHIdle.Systems
         static bool TryBomb(
             HunterProgress progress,
             CombatItemState state,
+            ItemId id,
             ref float monsterHp,
             SkillCombatEffects skills,
             List<string> logs)
         {
-            var def = ItemDatabase.Get(ItemId.BarrelBomb);
-            if (progress.GetLoadoutCount(ItemId.BarrelBomb) <= 0) return false;
-            if (!ItemSystem.ConsumeFromLoadout(progress, ItemId.BarrelBomb)) return false;
+            var def = ItemDatabase.Get(id);
+            if (def == null || def.BombDamage <= 0f) return false;
+            if (def.BombNeedsImmobilize && state.ImmobilizeTimer <= ItemBalance.BombImmobilizeWindow)
+                return false;
+            if (progress.GetLoadoutCount(id) <= 0) return false;
+            if (!ItemSystem.ConsumeFromLoadout(progress, id)) return false;
 
             float damage = def.BombDamage;
             if (skills.HasSleep) damage *= ItemBalance.SleepBombMul;
