@@ -121,10 +121,21 @@ namespace MHIdle.Systems
                 if (info.Skill == SkillId.Paralysis) fx.HasParalysis = true;
             }
 
+            PlaystyleSystem.ApplyTo(fx, progress);
+
             fx.CritChance = Mathf.Clamp01(fx.CritChance);
             fx.StatusChance = Mathf.Clamp01(fx.StatusChance);
             fx.TrapChanceBonus = Mathf.Clamp01(fx.TrapChanceBonus);
             return fx;
+        }
+
+        public static string DescribeBuildFocus(HunterProgress progress)
+        {
+            var def = PlaystyleSystem.Current(progress);
+            int pieces = PlaystyleSystem.EquippedSetPieces(progress, def);
+            if (pieces >= 3) return $"流派：{def.Name}（套装成型 {pieces}/4）";
+            if (pieces > 0) return $"流派：{def.Name}（防具 {pieces}/4）";
+            return $"流派：{def.Name}（点选切换）";
         }
 
         public static string DescribeBuildFocus(SkillCombatEffects fx)

@@ -98,6 +98,21 @@ namespace MHIdle
             }
         }
 
+        public void SelectPlaystyle(Data.PlaystyleId id, bool autoEquip = false)
+        {
+            StatusMessage = PlaystyleSystem.Select(Progress, id, autoEquip);
+            Combat.RecalculateAfterGearChange();
+            SaveSystem.Save(Progress);
+        }
+
+        public void EquipPlaystyleGear()
+        {
+            var def = PlaystyleSystem.Current(Progress);
+            StatusMessage = $"装配{def.Name}：{PlaystyleSystem.EquipRecommended(Progress, def)}";
+            Combat.RecalculateAfterGearChange();
+            SaveSystem.Save(Progress);
+        }
+
         public void ResetProgress()
         {
             SaveSystem.Delete();

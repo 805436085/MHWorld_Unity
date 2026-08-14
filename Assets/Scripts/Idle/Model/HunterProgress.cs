@@ -21,6 +21,7 @@ namespace MHIdle.Model
         public int TotalLargeKills;
         public int HuntDeaths;
         public long LastSaveUnix;
+        public string SelectedPlaystyleId = nameof(PlaystyleId.Balanced);
 
         public Dictionary<string, int> Materials = new Dictionary<string, int>();
         public Dictionary<string, WeaponProgress> Weapons = new Dictionary<string, WeaponProgress>();
@@ -63,6 +64,8 @@ namespace MHIdle.Model
             if (UnlockedTechniques == null) UnlockedTechniques = new HashSet<string>();
             if (Loadout == null) Loadout = new Dictionary<string, int>();
             if (ItemInventory == null) ItemInventory = new Dictionary<string, int>();
+            if (string.IsNullOrEmpty(SelectedPlaystyleId) || PlaystyleDatabase.Get(SelectedPlaystyleId) == null)
+                SelectedPlaystyleId = PlaystyleId.Balanced.ToString();
 
             // 新手赠送基础药品
             if (GetItem(ItemId.Potion) == 0 && GetLoadoutCount(ItemId.Potion) == 0 && TotalKills == 0)
