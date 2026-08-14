@@ -229,6 +229,8 @@ namespace MHIdle.UI
             GUILayout.Label(
                 $"{ProficiencyNaming.LevelLabel(ProficiencyNaming.Weapon, wp.Outer.Level)}  攻 {progress.GetPlayerAttack():0.0}  防 {progress.GetTotalDefense():0.0}",
                 _smallStyle);
+            if (wp.IsProficiencyLocked)
+                GUILayout.Label(ProficiencyNaming.BottleneckHint, _smallStyle);
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
 
@@ -396,7 +398,7 @@ namespace MHIdle.UI
                 styleRing,
                 new Color(0.78f, 0.62f, 0.42f));
 
-            if (wp.Outer.Level % 5 == 0 && !wp.BottleneckBroken)
+            if (wp.IsProficiencyLocked)
             {
                 GUILayout.Space(4f * _uiScale);
                 GUILayout.BeginVertical(_boxStyle);

@@ -139,6 +139,9 @@ namespace MHIdle.Model
                         Exp = Mathf.Max(0, Weapons[weapon.Id].ProficiencyExp)
                     };
                 }
+
+                if (Weapons[weapon.Id].IsProficiencyLocked)
+                    Weapons[weapon.Id].Outer.FillRing();
             }
 
             if (string.IsNullOrEmpty(EquippedWeaponId) || GetWeaponDef(EquippedWeaponId) == null)

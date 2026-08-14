@@ -57,9 +57,7 @@ namespace MHIdle.Systems
 
             // 大怪且专精瓶颈未破：略微降低胜率提示，鼓励先养
             var weapon = progress.GetEquippedWeaponProgress();
-            if (monster.Size == MonsterSize.Large &&
-                weapon.Outer.Level % 5 == 0 &&
-                !weapon.BottleneckBroken)
+            if (monster.Size == MonsterSize.Large && weapon.IsProficiencyLocked)
             {
                 raw -= 0.05f;
             }

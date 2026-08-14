@@ -29,7 +29,7 @@ namespace MHIdle.Data
             $"⚠ {Weapon}瓶颈：请主动讨伐大型怪物突破";
 
         public static string BottleneckIdleNote =>
-            $"{Weapon}瓶颈：小怪收益降低，需讨伐大型怪物突破";
+            $"{Weapon}已锁定：挂机小怪无法突破，请主动讨伐大型怪物";
 
         public static string BottleneckBrokenNote =>
             $"大型讨伐突破{Weapon}瓶颈！";
